@@ -1,7 +1,7 @@
-package edu.oregonstate.mist.webapiskeleton.resources
+package edu.oregonstate.mist.classsearchapi.resources
 
 import edu.oregonstate.mist.api.Resource
-import edu.oregonstate.mist.webapiskeleton.core.Sample
+import edu.oregonstate.mist.classsearchapi.core.Sample
 import edu.oregonstate.mist.api.AuthenticatedUser
 import io.dropwizard.auth.Auth
 import javax.ws.rs.GET
