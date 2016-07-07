@@ -15,7 +15,7 @@ import io.dropwizard.auth.basic.BasicAuthFactory
 /**
  * Main application class.
  */
-class ClassSearchApplication extends Application<Configuration> {
+class ClassSearchApplication extends Application<ClassSearchConfiguration> {
     /**
      * Initializes application bootstrap.
      *
@@ -31,7 +31,7 @@ class ClassSearchApplication extends Application<Configuration> {
      * @param environment
      */
     @Override
-    public void run(Configuration configuration, Environment environment) {
+    public void run(ClassSearchConfiguration configuration, Environment environment) {
         Resource.loadProperties('resource.properties')
         environment.jersey().register(new SampleResource())
         environment.jersey().register(new InfoResource())
