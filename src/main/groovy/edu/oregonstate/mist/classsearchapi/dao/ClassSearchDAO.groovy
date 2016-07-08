@@ -97,7 +97,7 @@ class ClassSearchDAO {
                     creditHourLow:              it.creditHourLow,
                     creditHours:                it.creditHours,
                     enrollment :                it.enrollment,
-                    maximumEnrollment :         it.maximumEnrollment,
+                    maximumEnrollment:          it.maximumEnrollment,
                     openSection:                it.openSection,
                     termStartDate :             it.partOfTermStartDate,
                     termEndDate:                it.partOfTermEndDate,
