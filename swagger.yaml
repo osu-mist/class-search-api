@@ -1,78 +1,238 @@
 swagger: '2.0'
+
 info:
-  title: Web API Skeleton
-  description: Skeleton for Dropwizard Web APIs
-  version: '0.0'
-  license:
-    name: GNU Affero General Public License Version 3
-    url: http://www.gnu.org/licenses/agpl-3.0.en.html
-externalDocs:
-  description: GitHub Repository
-  url: https://github.com/osu-mist/web-api-skeleton
-host: localhost
-schemes:
-  - http
-basePath: /api/v0
-consumes:
-  - text/plain
-produces:
-  - text/plain
+  version: "1.0.0"
+  title: Class Search API
+
 paths:
-  /:
+  /class-search:
     get:
-      summary: Get information
-      description: Build and runtime information about the application.
-      responses:
-        200:
-          description: Object containing information
-          schema:
-            $ref: '#/definitions/Info'
-  /sample:
-    get:
-      summary: Get message
-      description: This is a sample resource that returns a short message.
-      responses:
-        200:
-          description: A short message
-          schema:
-            type: string
-        404:
-          description: Not found
-          schema:
-            $ref: '#/definitions/Error'
-    post:
-      summary: Post message
-      description: This is a sample resource that returns the message it receives.
+      tags:
+       - classes
+       - search
+      description: "Searches for the classes available for registration given a term code, subject and course number."
+      operationId: getClasses
+      produces:
+        - application/json
       parameters:
-        - name: message
-          in: body
-          schema:
-            type: string
+        - in: query
+          name: term
+          description: "The term code is based on the fiscal year. To find the term that you an appropriate value, first query `/terms/open` or `/terms` and use the `code` value."
           required: true
+          type: string
+        - in: query
+          name: subject
+          description: "This is a two to four letter course subject. To find a list of appropriate subjects, you can query: `/course-subjects` and use the `abbreviation` value."
+          required: false
+          type: string
+        - in: query
+          name: courseNumber
+          description: "This is the course number associated with a class. For example, the value `111` is the course number for MTH 111."
+          required: false
+          type: string
+        - in: query
+          name: q
+          description: "Searches class title, description, and subject"
+          required: false
+          type: string
+        - in: query
+          name: page[size]
+          description: "Number of results to return. Used in pagination. Default value is 10."
+          required: false
+          type: string
+        - in: query
+          name: page[number]
+          description: "Page number of results. Used to paginate through results."
+          required: false
+          type: string
+
+
       responses:
-        200:
-          description: The message received
+        "200":
+          description: "Successful response"
           schema:
-            type: string
-        404:
-          description: Not found
+            $ref: "#/definitions/ResultObjects"
+        "404":
+          description: "Not Found"
           schema:
-            $ref: '#/definitions/Error'
+            $ref: "#/definitions/Error"
+        "500":
+          description: "Internal Server Error"
+          schema:
+            $ref: "#/definitions/Error"
+
 definitions:
-  Info:
+  ResultObjects:
     properties:
-      name:
+      links:
+        $ref: "#/definitions/Links"
+      data:
+        type: array
+        items:
+          $ref: "#/definitions/ResourceObject"
+
+  ResourceObject:
+    properties:
+      id:
         type: string
-      time:
+      type:
+        type: string
+      attributes:
+        $ref: "#/definitions/Attributes"
+
+  Attributes:
+    properties:
+      campusDescription:
+        type: string
+        description: "Name of campus. Sample value: `Oregon State - Corvallis`"
+      courseNumber:
+        type: string
+        description: "Number of course. Sample value: `111` for MTH 111"
+      crn:
+        type: string
+        description: "Course Reference Number used to uniquely identify a class available for registration. This is the CRN value that students use to register for a class section."
+      sectionTitle:
+        type: string
+        description: "Title of the course section"
+      creditHourHigh:
         type: integer
-      commit:
+        description: "Maximum number of credit hours for a course. Used in variable credit courses."
+      creditHourLow:
+        type: integer
+        description: "Minimum number of credit hours for a course."
+      creditHours:
+        type: integer
+        description: "Restrict a course to a single credit hour value."
+      enrollment:
+        type: integer
+        description: "Number of currently enrolled students."
+      maximumEnrollment:
+        type: integer
+        description: "Maximum number of people that can enroll"
+      faculty:
+        type: array
+        items:
+          $ref: "#/definitions/Faculty"
+      meetingTimes:
+        type: array
+        items:
+          $ref: "#/definitions/MeetingTimes"
+      openSection:
         type: string
-      documentation:
+        description: "Whether or not the section is open for students to register"
+      termStartDate":
         type: string
+        description: "Beginining of term. Format: YYYY-MM-DD"
+      termEndDate:
+        type: string
+        description: "End of term. Format: YYYY-MM-DD"
+      termWeeks":
+        type: string
+        description: "Number of weeks the class lasts."
+      scheduleTypeDescription:
+        type: string
+        description: "Whether the section is a lecture, recitation, thesis, or another type"
+      section:
+        type: string
+        description: "Section class"
+      status:
+        type: string
+        description: "Whether the course is open or closed"
+      subject:
+        type: string
+        description: "Letter identifier to specify the subject. This is the same value as the subject parameter"
+      subjectCourse:
+        type: string
+        description: "Subject and course number together. Sample value: CS161"
+      subjectDescription:
+        type: string
+        description: "Description of the subject"
+      term:
+        type: string
+        description: "Term for this specific CRN"
+      termDesc:
+        type: string
+        description: "Term description"
+      waitCapacity:
+        type: integer
+        description: "Maximum waiting list capacity"
+      waitCount:
+        type: integer
+        description: "Number of students currently in waiting list to register"
+
+  Faculty:
+    properties:
+      displayName:
+        type: string
+      primaryFaculty:
+        type: boolean
+
+  MeetingTimes:
+    properties:
+        startTime:
+          type: string
+          description: "Time when the class meets in 24hr format"
+        endTime:
+          type: string
+          description: "Time when the class ends in 24hr format"
+        building:
+          type: string
+          description: "Building abbreviation"
+        buildingName:
+          type: string
+          description: "Name of building"
+        room:
+          type: string
+          description: "Room number"
+        campus:
+          type: string
+          description: "Campus code"
+        campusDescription:
+          type: string
+          description: "Name of campus"
+        monday:
+          type: boolean
+          description: "Whether or not the class meets on this day."
+        tuesday:
+          type: boolean
+          description: "Whether or not the class meets on this day."
+        wednesday:
+          type: boolean
+          description: "Whether or not the class meets on this day."
+        thursday:
+          type: boolean
+          description: "Whether or not the class meets on this day."
+        friday:
+          type: boolean
+          description: "Whether or not the class meets on this day."
+        saturday:
+          type: boolean
+          description: "Whether or not the class meets on this day."
+        sunday:
+          type: boolean
+          description: "Whether or not the class meets on this day."
+
+
+
+  Links:
+    properties:
+      self:
+        type: string
+      first:
+        type: string
+      last:
+        type: string
+      prev:
+        type: string
+      next:
+        type: string
+
   Error:
+    type: object
     properties:
       status:
         type: integer
+        format: int32
       developerMessage:
         type: string
       userMesage:
