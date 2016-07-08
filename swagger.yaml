@@ -150,7 +150,7 @@ definitions:
       term:
         type: string
         description: "Term for this specific CRN"
-      termDesc:
+      termDescription:
         type: string
         description: "Term description"
       waitCapacity:
