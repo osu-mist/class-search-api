@@ -3,6 +3,7 @@ package edu.oregonstate.mist.classsearchapi.resources
 import com.codahale.metrics.annotation.Timed
 import edu.oregonstate.mist.api.Resource
 import edu.oregonstate.mist.api.AuthenticatedUser
+import edu.oregonstate.mist.api.jsonapi.ResultObject
 import edu.oregonstate.mist.classsearchapi.dao.ClassSearchDAO
 import io.dropwizard.auth.Auth
 
@@ -37,6 +38,7 @@ class ClassSearchResource extends Resource {
     public Response classSearch(@Auth AuthenticatedUser _, @NotNull @QueryParam('term') String term,
                                @QueryParam('subject') String subject,
                                @QueryParam('courseNumber') String courseNumber, @QueryParam('q') String q) {
+        // validate parameters
         if (!term || !term.trim()) {
             return badRequest("term is a required parameter.").build()
         }
@@ -50,8 +52,9 @@ class ClassSearchResource extends Resource {
         }
 
         def data = classSearchDAO.getData(term, subject, courseNumber, q)
+        ResultObject resultObject = new ResultObject(data: data)
 
-        ResponseBuilder responseBuilder = ok(data)
+        ResponseBuilder responseBuilder = ok(resultObject)
         responseBuilder.build()
     }
 
