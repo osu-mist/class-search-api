@@ -3,6 +3,8 @@ package edu.oregonstate.mist.classsearchapi.dao
 import com.fasterxml.jackson.databind.ObjectMapper
 import edu.oregonstate.mist.api.jsonapi.ResourceObject
 import edu.oregonstate.mist.classsearchapi.core.Attributes
+import edu.oregonstate.mist.classsearchapi.core.Faculty
+import edu.oregonstate.mist.classsearchapi.core.MeetingTime
 import groovyx.net.http.HTTPBuilder
 
 import static groovyx.net.http.ContentType.JSON
@@ -58,17 +60,42 @@ class ClassSearchDAO {
      */
     private static List<ResourceObject> getFormattedData(def data) {
         List<ResourceObject> result = new ArrayList<ResourceObject>()
+
         data.each {
+            List<Faculty> faculty = new ArrayList<Faculty>()
+            List<MeetingTime> meetingTimes = new ArrayList<MeetingTime>()
+            it.faculty.each { f ->
+                faculty << new Faculty(displayName: f.displayName, primaryFaculty: f.primaryIndicator)
+            }
+            it.meetingTimes.each { k ->
+                meetingTimes << new MeetingTime(
+                        startTime:          k.beginTime,
+                        endTime:            k.endTime,
+                        building:           k.building,
+                        buildingName:       k.buildingDescription,
+                        room:               k.room,
+                        campus:             k.campus,
+                        campusDescription:  k.campusDescription,
+                        monday:             k.monday,
+                        tuesday:            k.tuesday,
+                        wednesday:          k.wednesday,
+                        thursday:           k.thursday,
+                        friday:             k.friday,
+                        saturday:           k.saturday,
+                        sunday:             k.sunday
+                )
+            }
+
             Attributes attributes = new Attributes(
                     campusDescription:          it.campusDescription,
-                    courseNumber:               it.subject,
+                    courseNumber:               it.courseNumber,
                     crn:                        it.courseReferenceNumber,
                     sectionTitle:               it.sectionTitle,
                     creditHourHigh:             it.creditHourHigh,
                     creditHourLow:              it.creditHourLow,
                     creditHours:                it.creditHours,
                     enrollment :                it.enrollment,
-                    maximumEnrollment :         it.subject,
+                    maximumEnrollment :         it.maximumEnrollment,
                     openSection:                it.openSection,
                     termStartDate :             it.partOfTermStartDate,
                     termEndDate:                it.partOfTermEndDate,
@@ -80,9 +107,11 @@ class ClassSearchDAO {
                     subjectCourse :             it.subjectCourse,
                     subjectDescription:         it.subjectDescription,
                     term:                       it.term,
-                    termDescription:            it.termDesc, //@todo: update swagger
+                    termDescription:            it.termDesc,
                     waitCapacity:               it.waitCapacity,
                     waitCount:                  it.waitCount,
+                    faculty:                    faculty,
+                    meetingTimes:               meetingTimes
             )
 
             result << new ResourceObject(id: it.courseReferenceNumber, type: 'course', attributes: attributes)

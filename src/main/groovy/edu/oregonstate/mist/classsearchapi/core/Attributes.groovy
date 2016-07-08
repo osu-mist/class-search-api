@@ -5,11 +5,11 @@ class Attributes {
     String courseNumber
     String crn
     String sectionTitle
-    String creditHourHigh
-    String creditHourLow
-    String creditHours
-    String enrollment
-    String maximumEnrollment
+    Integer creditHourHigh
+    Integer creditHourLow
+    Integer creditHours
+    Integer enrollment
+    Integer maximumEnrollment
     String openSection
     String termStartDate
     String termEndDate
@@ -22,7 +22,9 @@ class Attributes {
     String subjectDescription
     String term
     String termDescription
-    String waitCapacity
-    String waitCount
+    Integer waitCapacity
+    Integer waitCount
+    List<Faculty> faculty
+    List<MeetingTime> meetingTimes
 
 }

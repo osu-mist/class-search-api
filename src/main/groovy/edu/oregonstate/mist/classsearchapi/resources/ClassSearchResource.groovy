@@ -51,6 +51,7 @@ class ClassSearchResource extends Resource {
             return badRequest("subject is a required parameter").build()
         }
 
+        //@todo: pagination
         def data = classSearchDAO.getData(term, subject, courseNumber, q)
         ResultObject resultObject = new ResultObject(data: data)
 
