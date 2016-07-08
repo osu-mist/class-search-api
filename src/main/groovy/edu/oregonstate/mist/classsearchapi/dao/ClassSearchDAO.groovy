@@ -1,6 +1,5 @@
 package edu.oregonstate.mist.classsearchapi.dao
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import edu.oregonstate.mist.api.jsonapi.ResourceObject
 import edu.oregonstate.mist.classsearchapi.core.Attributes
 import edu.oregonstate.mist.classsearchapi.core.Faculty
@@ -10,6 +9,10 @@ import groovyx.net.http.HTTPBuilder
 import static groovyx.net.http.ContentType.JSON
 
 class ClassSearchDAO {
+    private static final String STATUS_CLOSED = 'Closed'
+    private static final String STATUS_OPEN = 'Open'
+    private static final String STATUS_WAITLISTED = 'Waitlisted'
+
     private final Map<String, String> classSearchConfiguration
 
     ClassSearchDAO(Map<String, String> classSearchConfiguration) {
@@ -43,9 +46,6 @@ class ClassSearchDAO {
             resp.headers.each { h ->
                 println " ${h.name} : ${h.value}"
             }
-//            println 'Response data: -----'
-//            System.out << reader
-//            println '\n--------------------'
             data = reader
         }
 
@@ -64,6 +64,8 @@ class ClassSearchDAO {
         data.each {
             List<Faculty> faculty = new ArrayList<Faculty>()
             List<MeetingTime> meetingTimes = new ArrayList<MeetingTime>()
+            String status = getStatus(it)
+
             it.faculty.each { f ->
                 faculty << new Faculty(displayName: f.displayName, primaryFaculty: f.primaryIndicator)
             }
@@ -101,8 +103,8 @@ class ClassSearchDAO {
                     termEndDate:                it.partOfTermEndDate,
                     termWeeks:                  it.partOfTermWeeks,
                     scheduleTypeDescription :   it.scheduleTypeDescription,
-                    section :                   it.sequenceNumber, //@todo: is this the right mapping?
-                    status :                    it.status.sectionOpen? 'Open' : 'Closed', //@todo: logic needs more work
+                    section :                   it.sequenceNumber,
+                    status :                    status,
                     subject:                    it.subject,
                     subjectCourse :             it.subjectCourse,
                     subjectDescription:         it.subjectDescription,
@@ -118,6 +120,23 @@ class ClassSearchDAO {
         }
 
         result
+    }
+
+    /**
+     * Calculates the status of a section based on availability and wait count.
+     *
+     * @param it
+     * @return
+     */
+    private static String getStatus(it) {
+        String status = STATUS_CLOSED
+        if (it.status.sectionOpen == STATUS_OPEN) {
+            status = STATUS_OPEN
+        }
+        if (it.waitCount > 0) {
+            status = STATUS_WAITLISTED //@todo: verify logic
+        }
+        status
     }
 
     /**
