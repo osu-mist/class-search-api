@@ -12,7 +12,6 @@ import javax.ws.rs.core.UriInfo
 abstract class Resource {
     protected static Properties properties = new Properties()
 
-
     /**
      * Default page number used in pagination
      */

@@ -8,10 +8,12 @@ import edu.oregonstate.mist.api.BasicAuthenticator
 import edu.oregonstate.mist.classsearchapi.dao.ClassSearchDAO
 import edu.oregonstate.mist.classsearchapi.resources.ClassSearchResource
 import io.dropwizard.Application
+import io.dropwizard.client.HttpClientBuilder
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import io.dropwizard.auth.AuthFactory
 import io.dropwizard.auth.basic.BasicAuthFactory
+import org.apache.http.client.HttpClient
 
 /**
  * Main application class.
@@ -36,7 +38,11 @@ class ClassSearchApplication extends Application<ClassSearchConfiguration> {
         Resource.loadProperties('resource.properties')
         environment.jersey().register(new InfoResource())
 
-        final ClassSearchDAO classSearchDAO = new ClassSearchDAO(configuration.classSearch)
+        HttpClient httpClient = new HttpClientBuilder(environment)
+                .using(configuration.getHttpClientConfiguration())
+                .build("example-http-client")
+
+        final ClassSearchDAO classSearchDAO = new ClassSearchDAO(configuration.classSearch, httpClient)
         def classSearchResource = new ClassSearchResource(classSearchDAO)
         classSearchResource.setEndpointUri(configuration.getApi().getEndpointUri())
         environment.jersey().register(classSearchResource)

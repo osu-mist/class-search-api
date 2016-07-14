@@ -16,9 +16,6 @@ import javax.ws.rs.core.Response
 import javax.ws.rs.core.Response.ResponseBuilder
 import javax.ws.rs.core.MediaType
 
-import static groovyx.net.http.ContentType.JSON
-import groovyx.net.http.HTTPBuilder
-
 /**
  * Sample resource class.
  */
@@ -38,27 +35,30 @@ class ClassSearchResource extends Resource {
     public Response classSearch(@Auth AuthenticatedUser _, @NotNull @QueryParam('term') String term,
                                @QueryParam('subject') String subject,
                                @QueryParam('courseNumber') String courseNumber, @QueryParam('q') String q) {
-        // validate parameters
-        if (!term || !term.trim()) {
-            return badRequest("term is a required parameter.").build()
+        try {
+            // validate parameters
+            if (!term || !term.trim()) {
+                return badRequest("term is a required parameter.").build()
+            }
+
+            if (!term.isNumber() || term.length() != TERM_LENGTH) {
+                return badRequest("term should be a ${TERM_LENGTH} digit code").build()
+            }
+
+            if (!subject || !subject.trim()) {
+                return badRequest("subject is a required parameter").build()
+            }
+
+            def response = classSearchDAO.getData(term, subject, courseNumber, q, getPageNumber(), getPageSize())
+            //@todo: these params are calcualted twice :(
+            ResultObject resultObject = new ResultObject(data: response.data)
+            setPaginationLinks(response.sourcePagination, term, subject, courseNumber, q, resultObject)
+
+            ResponseBuilder responseBuilder = ok(resultObject)
+            responseBuilder.build()
+        } catch (Exception e) {
+            internalServerError("Woot you found a bug for us to fix!").build()
         }
-
-        if (!term.isNumber() || term.length() != TERM_LENGTH) {
-            return badRequest("term should be a ${TERM_LENGTH} digit code").build()
-        }
-
-        if (!subject || !subject.trim()) {
-            return badRequest("subject is a required parameter").build()
-        }
-
-        def response = classSearchDAO.getData(term, subject, courseNumber, q, getPageNumber(), getPageSize()) //@todo: these params are calcualted twice :(
-        ResultObject resultObject = new ResultObject(data: response.data)
-        setPaginationLinks(response.sourcePagination, term, subject, courseNumber, q, resultObject)
-
-        ResponseBuilder responseBuilder = ok(resultObject)
-        responseBuilder.build()
-
-        //@todo: need try/catch block handling!!!
     }
 
     private void setPaginationLinks(def sourcePagination, String term, String subject, String courseNumber, String q,
@@ -101,6 +101,4 @@ class ClassSearchResource extends Resource {
             resultObject.links["next"] = null
         }
     }
-
-
 }

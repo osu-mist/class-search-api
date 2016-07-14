@@ -1,10 +1,30 @@
 package edu.oregonstate.mist.classsearchapi.dao
 
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.ObjectMapper
 import edu.oregonstate.mist.api.jsonapi.ResourceObject
 import edu.oregonstate.mist.classsearchapi.core.Attributes
 import edu.oregonstate.mist.classsearchapi.core.Faculty
 import edu.oregonstate.mist.classsearchapi.core.MeetingTime
 import groovyx.net.http.HTTPBuilder
+import org.apache.http.HttpEntity
+import org.apache.http.HttpHeaders
+import org.apache.http.HttpHost
+import org.apache.http.auth.AuthScope
+import org.apache.http.auth.UsernamePasswordCredentials
+import org.apache.http.client.AuthCache
+import org.apache.http.client.CredentialsProvider
+import org.apache.http.client.HttpClient
+import org.apache.http.client.methods.CloseableHttpResponse
+import org.apache.http.client.methods.HttpGet
+import org.apache.http.client.protocol.HttpClientContext
+import org.apache.http.client.utils.URIBuilder
+import org.apache.http.impl.auth.BasicScheme
+import org.apache.http.impl.client.BasicAuthCache
+import org.apache.http.impl.client.BasicCredentialsProvider
+import org.apache.http.impl.client.CloseableHttpClient
+import org.apache.http.impl.client.HttpClients
+import org.apache.http.util.EntityUtils
 
 import static groovyx.net.http.ContentType.JSON
 
@@ -15,8 +35,12 @@ class ClassSearchDAO {
 
     private final Map<String, String> classSearchConfiguration
 
-    ClassSearchDAO(Map<String, String> classSearchConfiguration) {
+    private HttpClient httpClient
+    private ObjectMapper mapper = new ObjectMapper()
+
+    ClassSearchDAO(Map<String, String> classSearchConfiguration, HttpClient httpClient) {
         this.classSearchConfiguration = classSearchConfiguration
+        this.httpClient = httpClient
     }
 
     /**
@@ -32,39 +56,70 @@ class ClassSearchDAO {
      */
     public def getData(String term, String subject, String courseNumber, String q,
                        Integer pageNumber, Integer pageSize) {
-        def data
+        def data = []
         def query = getQueryMap(term, subject, courseNumber, q, pageNumber, pageSize)
-
-        //@todo: use built-in http library: http://hc.apache.org/httpcomponents-client-ga/quickstart.html
-        def remote = new HTTPBuilder(getBackendHost())
-        remote.ignoreSSLIssues()
-        remote.auth.basic(getBackendUsername(), getBackendPassword())
         def sourcePagination = [totalCount: 0, pageOffset: 0, pageMaxSize: 0]
 
-        remote.get( path : getBackendPath(),
-                contentType : JSON,
-                query : query) { resp, reader ->
+        CredentialsProvider credsProvider = new BasicCredentialsProvider()
+        credsProvider.setCredentials(
+                new AuthScope(backendHost, backendPort),
+                new UsernamePasswordCredentials(backendUsername, backendPassword))
 
+        HttpClientContext context = HttpClientContext.create()
+        context.setCredentialsProvider(credsProvider)
 
-            //@todo: add this as a log debug
-            println "response status: ${resp.statusLine}"
-            println 'Headers: -----------'
-            resp.headers.each { h ->
-                println " ${h.name} : ${h.value}"
-            }
+        URI uri = getBackendURI(query)
 
-            sourcePagination = getSourcePagination(resp.headers)
-            data = reader
+        HttpGet httpGet = new HttpGet(uri)
+        httpGet.setHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+        httpGet.setHeader(HttpHeaders.ACCEPT, "application/json")
+
+        CloseableHttpResponse response = httpclient.execute(httpGet, context)
+
+        try {
+            HttpEntity entity = response.getEntity()
+
+            def entityString = EntityUtils.toString(entity)
+
+            data = this.mapper.readValue(entityString,
+                    new TypeReference<List<HashMap>>() {
+                });
+
+            sourcePagination = getSourcePagination(response.getAllHeaders())
+
+            EntityUtils.consume(entity)
+        } finally {
+            response.close()
         }
 
-        [data: getFormattedData(data), sourcePagination: sourcePagination] //@TODO: MAX PARAM IS NOT RESPECTED :(
+        [data: getFormattedData(data), sourcePagination: sourcePagination]
     }
 
-    private getSourcePagination(headers) {
+    private URI getBackendURI(LinkedHashMap<String, Integer> query) {
+        URIBuilder uriBuilder = new URIBuilder()
+                .setScheme(backendScheme)
+                .setHost(backendHost)
+                .setPort(backendPort)
+                .setPath(backendPath)
+
+        query.each { k, v ->
+            uriBuilder.setParameter(k, v.toString())
+        }
+
+        URI uri = uriBuilder.build()
+        uri
+    }
+
+    private static getSourcePagination(headers) {
+        def headerMap = [:]
+        headers.each {
+            headerMap[it.name] = it.value
+        }
+
         [
-            totalCount: headers['X-hedtech-totalCount'].value?.toInteger(),
-            pageOffset: headers['X-hedtech-pageOffset'].value?.toInteger(),
-            pageMaxSize: headers['X-hedtech-pageMaxSize'].value?.toInteger()
+            totalCount: headerMap['X-hedtech-totalCount']?.toInteger(),
+            pageOffset: headerMap['X-hedtech-pageOffset']?.toInteger(),
+            pageMaxSize: headerMap['X-hedtech-pageMaxSize']?.toInteger()
         ]
     }
 
@@ -132,7 +187,8 @@ class ClassSearchDAO {
                     meetingTimes:               meetingTimes
             )
 
-            result << new ResourceObject(id: it.courseReferenceNumber, type: 'course', attributes: attributes)
+            result << new ResourceObject(id: it.courseReferenceNumber, type: 'course',
+                    attributes: attributes)
         }
 
         result
@@ -193,6 +249,14 @@ class ClassSearchDAO {
 
     private String getBackendHost() {
         classSearchConfiguration.get("backendHost")
+    }
+
+    private String getBackendScheme() {
+        classSearchConfiguration.get("backendScheme")
+    }
+
+    private Integer getBackendPort() {
+        classSearchConfiguration.get("backendPort").toInteger()
     }
 
     private String getBackendPath() {
