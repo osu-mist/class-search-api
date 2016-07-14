@@ -12,10 +12,10 @@ import org.apache.http.client.utils.URIBuilder
 import org.apache.http.impl.client.BasicCredentialsProvider
 
 class UtilHttp {
-    private final Map<String, String> classSearchConfiguration
+    private final Map<String, String> apiConfiguration
 
-    UtilHttp(Map<String, String> classSearchConfiguration) {
-        this.classSearchConfiguration = classSearchConfiguration
+    UtilHttp(Map<String, String> apiConfiguration) {
+        this.apiConfiguration = apiConfiguration
     }
 
 
@@ -67,26 +67,26 @@ class UtilHttp {
     }
 
     private String getBackendHost() {
-        classSearchConfiguration.get("backendHost")
+        apiConfiguration.get("backendHost")
     }
 
     private String getBackendScheme() {
-        classSearchConfiguration.get("backendScheme")
+        apiConfiguration.get("backendScheme")
     }
 
     private Integer getBackendPort() {
-        classSearchConfiguration.get("backendPort").toInteger()
+        apiConfiguration.get("backendPort").toInteger()
     }
 
     private String getBackendPath() {
-        classSearchConfiguration.get("backendPath")
+        apiConfiguration.get("backendPath")
     }
 
     private String getBackendUsername() {
-        classSearchConfiguration.get("backendUsername")
+        apiConfiguration.get("backendUsername")
     }
 
     private String getBackendPassword() {
-        classSearchConfiguration.get("backendPassword")
+        apiConfiguration.get("backendPassword")
     }
 }

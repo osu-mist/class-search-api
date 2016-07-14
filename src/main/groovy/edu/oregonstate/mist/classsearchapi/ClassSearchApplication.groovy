@@ -6,6 +6,8 @@ import edu.oregonstate.mist.api.InfoResource
 import edu.oregonstate.mist.api.AuthenticatedUser
 import edu.oregonstate.mist.api.BasicAuthenticator
 import edu.oregonstate.mist.classsearchapi.dao.ClassSearchDAO
+import edu.oregonstate.mist.classsearchapi.dao.UtilHttp
+import edu.oregonstate.mist.classsearchapi.health.BackendHealth
 import edu.oregonstate.mist.classsearchapi.resources.ClassSearchResource
 import io.dropwizard.Application
 import io.dropwizard.client.HttpClientBuilder
@@ -38,11 +40,17 @@ class ClassSearchApplication extends Application<ClassSearchConfiguration> {
         Resource.loadProperties('resource.properties')
         environment.jersey().register(new InfoResource())
 
+        // the httpclient from DW provides with many metrics and config options
         HttpClient httpClient = new HttpClientBuilder(environment)
                 .using(configuration.getHttpClientConfiguration())
-                .build("example-http-client")
+                .build("backend-http-client")
 
-        final ClassSearchDAO classSearchDAO = new ClassSearchDAO(configuration.classSearch, httpClient)
+        // reusable UtilHttp instance for both DAO and healthcheck
+        UtilHttp utilHttp = new UtilHttp(configuration.classSearch)
+
+        // setup dao
+        final ClassSearchDAO classSearchDAO = new ClassSearchDAO(utilHttp, httpClient)
+
         def classSearchResource = new ClassSearchResource(classSearchDAO)
         classSearchResource.setEndpointUri(configuration.getApi().getEndpointUri())
         environment.jersey().register(classSearchResource)
@@ -53,7 +61,10 @@ class ClassSearchApplication extends Application<ClassSearchConfiguration> {
                                 new BasicAuthenticator(configuration.getCredentialsList()),
                                 'SkeletonApplication',
                                 AuthenticatedUser.class)))
-        //@todo: healthchecks need to be implemented still!!!
+
+        // healthchecks
+        environment.healthChecks().register("backend",
+                new BackendHealth(utilHttp, httpClient))
     }
 
     /**

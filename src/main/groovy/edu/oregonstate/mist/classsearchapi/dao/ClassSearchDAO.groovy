@@ -20,9 +20,9 @@ class ClassSearchDAO {
     private HttpClient httpClient
     private ObjectMapper mapper = new ObjectMapper()
 
-    ClassSearchDAO(Map<String, String> classSearchConfiguration, HttpClient httpClient) {
+    ClassSearchDAO(UtilHttp utilHttp, HttpClient httpClient) {
         this.httpClient = httpClient
-        this.utilHttp = new UtilHttp(classSearchConfiguration)
+        this.utilHttp = utilHttp
     }
 
     /**
