@@ -26,30 +26,46 @@ class ClassSearchDAO {
      * @param subject
      * @param courseNumber
      * @param q
+     * @param pageNumber
+     * @param pageSize
      * @return
      */
-    public def getData(String term, String subject, String courseNumber, String q) {
+    public def getData(String term, String subject, String courseNumber, String q,
+                       Integer pageNumber, Integer pageSize) {
         def data
-        def query = getQueryMap(term, subject, courseNumber, q)
+        def query = getQueryMap(term, subject, courseNumber, q, pageNumber, pageSize)
 
         //@todo: use built-in http library: http://hc.apache.org/httpcomponents-client-ga/quickstart.html
         def remote = new HTTPBuilder(getBackendHost())
         remote.ignoreSSLIssues()
         remote.auth.basic(getBackendUsername(), getBackendPassword())
+        def sourcePagination = [totalCount: 0, pageOffset: 0, pageMaxSize: 0]
 
         remote.get( path : getBackendPath(),
                 contentType : JSON,
                 query : query) { resp, reader ->
 
+
+            //@todo: add this as a log debug
             println "response status: ${resp.statusLine}"
             println 'Headers: -----------'
             resp.headers.each { h ->
                 println " ${h.name} : ${h.value}"
             }
+
+            sourcePagination = getSourcePagination(resp.headers)
             data = reader
         }
 
-        getFormattedData(data)
+        [data: getFormattedData(data), sourcePagination: sourcePagination] //@TODO: MAX PARAM IS NOT RESPECTED :(
+    }
+
+    private getSourcePagination(headers) {
+        [
+            totalCount: headers['X-hedtech-totalCount'].value?.toInteger(),
+            pageOffset: headers['X-hedtech-pageOffset'].value?.toInteger(),
+            pageMaxSize: headers['X-hedtech-pageMaxSize'].value?.toInteger()
+        ]
     }
 
     /**
@@ -146,10 +162,13 @@ class ClassSearchDAO {
      * @param subject
      * @param courseNumber
      * @param q
+     * @param pageNumber
+     * @param pageSize
      * @return
      */
-    private LinkedHashMap getQueryMap(String term, String subject, String courseNumber, String q) {
-        def query = [:]
+    private LinkedHashMap getQueryMap(String term, String subject, String courseNumber, String q,
+                                      Integer pageNumber, Integer pageSize) {
+        def query = [offset:0]
 
         if (term) {
             query['term'] = term.trim()
@@ -162,6 +181,12 @@ class ClassSearchDAO {
         }
         if (q) {
             query['keyword'] = q.trim()
+        }
+        if (pageNumber && pageNumber > 1) {
+            query['offset'] = pageSize * pageNumber
+        }
+        if (pageSize) {
+            query['max'] = pageSize
         }
         query
     }

@@ -51,12 +51,55 @@ class ClassSearchResource extends Resource {
             return badRequest("subject is a required parameter").build()
         }
 
-        //@todo: pagination
-        def data = classSearchDAO.getData(term, subject, courseNumber, q)
-        ResultObject resultObject = new ResultObject(data: data)
+        def response = classSearchDAO.getData(term, subject, courseNumber, q, getPageNumber(), getPageSize()) //@todo: these params are calcualted twice :(
+        ResultObject resultObject = new ResultObject(data: response.data)
+        setPaginationLinks(response.sourcePagination, term, subject, courseNumber, q, resultObject)
 
         ResponseBuilder responseBuilder = ok(resultObject)
         responseBuilder.build()
+
+        //@todo: need try/catch block handling!!!
+    }
+
+    private void setPaginationLinks(def sourcePagination, String term, String subject, String courseNumber, String q,
+                                    ResultObject resultObject) {
+        // If no results were found, no need to add links
+        if (!sourcePagination?.totalCount) {
+            return
+        }
+
+        Integer pageNumber = getPageNumber()
+        Integer pageSize = getPageSize()
+        def urlParams = [
+                "term": term,
+                "subject": subject,
+                "courseNumber": courseNumber,
+                "q": q,
+                "pageSize": pageSize,
+                "pageNumber": pageNumber
+        ]
+
+        int lastPage = Math.ceil(sourcePagination.totalCount / pageSize)
+
+        resultObject.links["self"] = getPaginationUrl(urlParams)
+        urlParams.pageNumber = 1
+        resultObject.links["first"] = getPaginationUrl(urlParams)
+        urlParams.pageNumber = lastPage
+        resultObject.links["last"] = getPaginationUrl(urlParams)
+
+        if (pageNumber > DEFAULT_PAGE_NUMBER) {
+            urlParams.pageNumber = pageNumber - 1
+            resultObject.links["prev"] = getPaginationUrl(urlParams)
+        } else {
+            resultObject.links["prev"] = null
+        }
+
+        if (sourcePagination?.totalCount > (pageNumber * pageSize)) {
+            urlParams.pageNumber = pageNumber + 1
+            resultObject.links["next"] = getPaginationUrl(urlParams)
+        } else {
+            resultObject.links["next"] = null
+        }
     }
 
 

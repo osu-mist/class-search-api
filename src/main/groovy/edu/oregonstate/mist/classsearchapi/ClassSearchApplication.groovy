@@ -35,8 +35,11 @@ class ClassSearchApplication extends Application<ClassSearchConfiguration> {
     public void run(ClassSearchConfiguration configuration, Environment environment) {
         Resource.loadProperties('resource.properties')
         environment.jersey().register(new InfoResource())
+
         final ClassSearchDAO classSearchDAO = new ClassSearchDAO(configuration.classSearch)
-        environment.jersey().register(new ClassSearchResource(classSearchDAO))
+        def classSearchResource = new ClassSearchResource(classSearchDAO)
+        classSearchResource.setEndpointUri(configuration.getApi().getEndpointUri())
+        environment.jersey().register(classSearchResource)
 
         environment.jersey().register(
                 AuthFactory.binder(
@@ -44,6 +47,7 @@ class ClassSearchApplication extends Application<ClassSearchConfiguration> {
                                 new BasicAuthenticator(configuration.getCredentialsList()),
                                 'SkeletonApplication',
                                 AuthenticatedUser.class)))
+        //@todo: healthchecks need to be implemented still!!!
     }
 
     /**
