@@ -1,6 +1,6 @@
 # Class Search API
 
-Class Search API to query the course catalog real time for course information and availability.
+Class Search API to query the course catalog in real time for course information and availability.
 
 ### Generate Keys
 
