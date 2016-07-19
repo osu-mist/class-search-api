@@ -1,6 +1,6 @@
-# Web API Skeleton
+# Class Search API
 
-Skeleton for Dropwizard Web APIs.
+Class Search API to query the course catalog in real time for course information and availability.
 
 ### Generate Keys
 
@@ -125,7 +125,7 @@ The Web API definition is contained in the [Swagger specification](swagger.yaml)
 
 The following examples demonstrate the use of `openssl s_client` and `curl` to make authenticated HTTPS requests.
 
-### GET /
+### GET /api/v1/
 
 This resource returns build and runtime information:
 
@@ -193,7 +193,7 @@ This resource returns build and runtime information:
         Timeout   : 300 (sec)
         Verify return code: 18 (self signed certificate)
     ---
-    GET /api/v0 HTTP/1.0
+    GET /api/v1 HTTP/1.0
     Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQ=
     
     HTTP/1.1 200 OK
@@ -201,28 +201,30 @@ This resource returns build and runtime information:
     Content-Type: application/json
     Content-Length: 111
     
-    {"name":"web-api-skeleton","time":1445964601991,"commit":"f08ce22","documentation":"swagger.yaml"}closed
+    {"name":"class-search-api","time":1467959701699,"commit":"4ba4715","documentation":"swagger.yaml"}closed
 
-### GET /sample
+### GET /api/v1/class-search?term={term}&subject={subject}&courseNumber={courseNumber}&q={searchQuery}
 
-This sample resource returns a short message:
-
-    $ curl \
-    > --insecure \
-    > --key doej.cer \
-    > --user "username:password" \
-    > https://localhost:8080/api/v0/sample
-    hello world
-
-### POST /sample
-
-This sample resource returns the request message:
+This resource returns an array of objects representing the courses matching the search query:
 
     $ curl \
-    > --insecure \
-    > --key doej.cer \
-    > --user "username:password" \
-    > --header "Content-Type: text/plain" \
-    > --data "goodbye world" \
-    > https://localhost:8080/api/v0/sample
-    goodbye world
+     --insecure \
+     --key doej.cer \
+     --user "username:password" \
+     https://localhost:8080/api/v1/class-search?term=201701&subject=CS&courseNumber=101
+     {"links":{},"data":[{"id":"10383","type":"course","attributes":{"campusDescription":" Oregon State - Corvallis","courseNumber":"101","crn":"10383","sectionTitle":null,"creditHourHigh":4,"creditHourLow":0,"creditHours":4,"enrollment":140,"maximumEnrollment":140,"openSection":"false","termStartDate":"2016-09-21","termEndDate":"2016-12-02","termWeeks":"10","scheduleTypeDescription":"Lecture","section":"001","status":"Closed","subject":"CS","subjectCourse":"CS101","subjectDescription":"Computer Science","term":"201701","termDescription":"Fall 2016","waitCapacity":0,"waitCount":0,"faculty":[{"displayName":"Doe, John","primaryFaculty":true}],"meetingTimes":[{"startTime":"1300","endTime":"1350","building":"LINC","buildingName":"Learning Innovation Center","room":"200","campus":"C","campusDescription":" Oregon State - Corvallis","monday":true,"tuesday":false,"wednesday":true,"thursday":false,"friday":true,"saturday":false,"sunday":false}]},"links":null},{"id":"10388","type":"course","attributes":{"campusDescription":" Oregon State - Corvallis","courseNumber":"101","crn":"10388","sectionTitle":null,"creditHourHigh":4,"creditHourLow":0,"creditHours":0,"enrollment":20,"maximumEnrollment":20,"openSection":"true","termStartDate":"2016-09-21","termEndDate":"2016-12-02","termWeeks":"10","scheduleTypeDescription":"Laboratory","section":"006","status":"Open","subject":"CS","subjectCourse":"CS101","subjectDescription":"Computer Science","term":"201701","termDescription":"Fall 2016","waitCapacity":10,"waitCount":3,"faculty":[{"displayName":"Doe, John","primaryFaculty":true}],"meetingTimes":[{"startTime":"0900","endTime":"0950","building":"MCC","buildingName":"Milne Computer Center","room":"130","campus":"C","campusDescription":" Oregon State - Corvallis","monday":false,"tuesday":true,"wednesday":false,"thursday":true,"friday":false,"saturday":false,"sunday":false}]},"links":null},{"id":"10387","type":"course","attributes":{"campusDescription":" Oregon State - Corvallis","courseNumber":"101","crn":"10387","sectionTitle":null,"creditHourHigh":4,"creditHourLow":0,"creditHours":0,"enrollment":20,"maximumEnrollment":20,"openSection":"true","termStartDate":"2016-09-21","termEndDate":"2016-12-02","termWeeks":"10","scheduleTypeDescription":"Laboratory","section":"007","status":"Open","subject":"CS","subjectCourse":"CS101","subjectDescription":"Computer Science","term":"201701","termDescription":"Fall 2016","waitCapacity":10,"waitCount":1,"faculty":[{"displayName":"Doe, John","primaryFaculty":true}],"meetingTimes":[{"startTime":"1000","endTime":"1050","building":"MCC","buildingName":"Milne Computer Center","room":"130","campus":"C","campusDescription":" Oregon State - Corvallis","monday":false,"tuesday":true,"wednesday":false,"thursday":true,"friday":false,"saturday":false,"sunday":false}]},"links":null},{"id":"10386","type":"course","attributes":{"campusDescription":" Oregon State - Corvallis","courseNumber":"101","crn":"10386","sectionTitle":null,"creditHourHigh":4,"creditHourLow":0,"creditHours":0,"enrollment":20,"maximumEnrollment":20,"openSection":"true","termStartDate":"2016-09-21","termEndDate":"2016-12-02","termWeeks":"10","scheduleTypeDescription":"Laboratory","section":"008","status":"Open","subject":"CS","subjectCourse":"CS101","subjectDescription":"Computer Science","term":"201701","termDescription":"Fall 2016","waitCapacity":10,"waitCount":2,"faculty":[{"displayName":"Doe, John","primaryFaculty":true}],"meetingTimes":[{"startTime":"1100","endTime":"1150","building":"MCC","buildingName":"Milne Computer Center","room":"130","campus":"C","campusDescription":" Oregon State - Corvallis","monday":false,"tuesday":true,"wednesday":false,"thursday":true,"friday":false,"saturday":false,"sunday":false}]},"links":null},{"id":"10384","type":"course","attributes":{"campusDescription":" Oregon State - Corvallis","courseNumber":"101","crn":"10384","sectionTitle":null,"creditHourHigh":4,"creditHourLow":0,"creditHours":0,"enrollment":20,"maximumEnrollment":20,"openSection":"true","termStartDate":"2016-09-21","termEndDate":"2016-12-02","termWeeks":"10","scheduleTypeDescription":"Laboratory","section":"009","status":"Open","subject":"CS","subjectCourse":"CS101","subjectDescription":"Computer Science","term":"201701","termDescription":"Fall 2016","waitCapacity":10,"waitCount":0,"faculty":[{"displayName":"Doe, John","primaryFaculty":true}],"meetingTimes":[{"startTime":"1200","endTime":"1250","building":"MCC","buildingName":"Milne Computer Center","room":"130","campus":"C","campusDescription":" Oregon State - Corvallis","monday":false,"tuesday":true,"wednesday":false,"thursday":true,"friday":false,"saturday":false,"sunday":false}]},"links":null},{"id":"11454","type":"course","attributes":{"campusDescription":" Oregon State - Corvallis","courseNumber":"101","crn":"11454","sectionTitle":null,"creditHourHigh":4,"creditHourLow":0,"creditHours":0,"enrollment":20,"maximumEnrollment":20,"openSection":"true","termStartDate":"2016-09-21","termEndDate":"2016-12-02","termWeeks":"10","scheduleTypeDescription":"Laboratory","section":"010","status":"Open","subject":"CS","subjectCourse":"CS101","subjectDescription":"Computer Science","term":"201701","termDescription":"Fall 2016","waitCapacity":10,"waitCount":0,"faculty":[{"displayName":"Doe, John","primaryFaculty":true}],"meetingTimes":[{"startTime":"1300","endTime":"1350","building":"MCC","buildingName":"Milne Computer Center","room":"130","campus":"C","campusDescription":" Oregon State - Corvallis","monday":false,"tuesday":true,"wednesday":false,"thursday":true,"friday":false,"saturday":false,"sunday":false}]},"links":null},{"id":"11367","type":"course","attributes":{"campusDescription":" Oregon State - Corvallis","courseNumber":"101","crn":"11367","sectionTitle":null,"creditHourHigh":4,"creditHourLow":0,"creditHours":0,"enrollment":20,"maximumEnrollment":20,"openSection":"true","termStartDate":"2016-09-21","termEndDate":"2016-12-02","termWeeks":"10","scheduleTypeDescription":"Laboratory","section":"011","status":"Open","subject":"CS","subjectCourse":"CS101","subjectDescription":"Computer Science","term":"201701","termDescription":"Fall 2016","waitCapacity":10,"waitCount":0,"faculty":[{"displayName":"Doe, John","primaryFaculty":true}],"meetingTimes":[{"startTime":"1400","endTime":"1450","building":"MCC","buildingName":"Milne Computer Center","room":"130","campus":"C","campusDescription":" Oregon State - Corvallis","monday":false,"tuesday":true,"wednesday":false,"thursday":true,"friday":false,"saturday":false,"sunday":false}]},"links":null},{"id":"11368","type":"course","attributes":{"campusDescription":" Oregon State - Corvallis","courseNumber":"101","crn":"11368","sectionTitle":null,"creditHourHigh":4,"creditHourLow":0,"creditHours":0,"enrollment":20,"maximumEnrollment":20,"openSection":"true","termStartDate":"2016-09-21","termEndDate":"2016-12-02","termWeeks":"10","scheduleTypeDescription":"Laboratory","section":"012","status":"Open","subject":"CS","subjectCourse":"CS101","subjectDescription":"Computer Science","term":"201701","termDescription":"Fall 2016","waitCapacity":10,"waitCount":0,"faculty":[{"displayName":"Doe, John","primaryFaculty":true}],"meetingTimes":[{"startTime":"1500","endTime":"1550","building":"MCC","buildingName":"Milne Computer Center","room":"130","campus":"C","campusDescription":" Oregon State - Corvallis","monday":false,"tuesday":true,"wednesday":false,"thursday":true,"friday":false,"saturday":false,"sunday":false}]},"links":null},{"id":"15322","type":"course","attributes":{"campusDescription":"Ecampus-Distance Education-LD","courseNumber":"101","crn":"15322","sectionTitle":null,"creditHourHigh":4,"creditHourLow":0,"creditHours":4,"enrollment":56,"maximumEnrollment":100,"openSection":"true","termStartDate":"2016-09-21","termEndDate":"2016-12-02","termWeeks":"10","scheduleTypeDescription":"WWW","section":"400","status":"Open","subject":"CS","subjectCourse":"CS101","subjectDescription":"Computer Science","term":"201701","termDescription":"Fall 2016","waitCapacity":5,"waitCount":0,"faculty":[{"displayName":"Doe, John","primaryFaculty":true}],"meetingTimes":[{"startTime":null,"endTime":null,"building":null,"buildingName":null,"room":null,"campus":null,"campusDescription":null,"monday":false,"tuesday":false,"wednesday":false,"thursday":false,"friday":false,"saturday":false,"sunday":false}]},"links":null},{"id":"18806","type":"course","attributes":{"campusDescription":"Oregon State - Cascades","courseNumber":"101","crn":"18806","sectionTitle":null,"creditHourHigh":4,"creditHourLow":0,"creditHours":4,"enrollment":1,"maximumEnrollment":40,"openSection":"true","termStartDate":"2016-09-21","termEndDate":"2016-12-02","termWeeks":"10","scheduleTypeDescription":"Lecture","section":"501","status":"Open","subject":"CS","subjectCourse":"CS101","subjectDescription":"Computer Science","term":"201701","termDescription":"Fall 2016","waitCapacity":0,"waitCount":0,"faculty":[{"displayName":"Doe, Jane","primaryFaculty":true}],"meetingTimes":[{"startTime":"1300","endTime":"1450","building":"TYKH","buildingName":"Tykeson Hall (Bend)","room":"205","campus":"B","campusDescription":"Oregon State - Cascades","monday":false,"tuesday":true,"wednesday":false,"thursday":true,"friday":false,"saturday":false,"sunday":false}]},"links":null}]}
+
+Courses matches term, course number, subject and query. An empty array is returned if no courses match:
+    $ curl \
+      --insecure \
+      --user "username:password" \
+      'https://localhost:8080/api/v1/class-search/?term=201708&subject=XX'
+    {"links":null,"data":[]}
+
+An error is returned if the request is invalid:
+
+    $ curl \
+      --insecure \
+      --user "username:password" \
+      'https://localhost:8080/api/v1/class-search/?term=xx'
+    {"status":400,"developerMessage":"term should be a 6 digit code","userMessage":"Bad Request - the application submitted invalid data. Please try again.","code":1400,"details":"https://developer.oregonstate.edu/documentation/error-reference#1400"}
