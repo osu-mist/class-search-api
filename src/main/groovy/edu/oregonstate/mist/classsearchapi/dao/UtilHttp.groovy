@@ -62,8 +62,7 @@ class UtilHttp {
             uriBuilder.setParameter(k, v.toString())
         }
 
-        URI uri = uriBuilder.build()
-        uri
+        uriBuilder.build()
     }
 
     private String getBackendHost() {

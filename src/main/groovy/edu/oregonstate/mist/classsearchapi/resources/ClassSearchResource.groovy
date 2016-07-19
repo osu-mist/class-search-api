@@ -6,6 +6,8 @@ import edu.oregonstate.mist.api.AuthenticatedUser
 import edu.oregonstate.mist.api.jsonapi.ResultObject
 import edu.oregonstate.mist.classsearchapi.dao.ClassSearchDAO
 import io.dropwizard.auth.Auth
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import javax.validation.constraints.NotNull
 import javax.ws.rs.GET
@@ -13,14 +15,11 @@ import javax.ws.rs.Path
 import javax.ws.rs.Produces
 import javax.ws.rs.QueryParam
 import javax.ws.rs.core.Response
-import javax.ws.rs.core.Response.ResponseBuilder
 import javax.ws.rs.core.MediaType
 
-/**
- * Sample resource class.
- */
 @Path('/class-search/')
 class ClassSearchResource extends Resource {
+    Logger logger = LoggerFactory.getLogger(ClassSearchResource.class);
 
     public static final int TERM_LENGTH = 6
     private final ClassSearchDAO classSearchDAO
@@ -52,17 +51,18 @@ class ClassSearchResource extends Resource {
             def response = classSearchDAO.getData(term, subject, courseNumber, q, getPageNumber(), getPageSize())
             //@todo: these params are calcualted twice :(
             ResultObject resultObject = new ResultObject(data: response.data)
-            setPaginationLinks(response.sourcePagination, term, subject, courseNumber, q, resultObject)
+            resultObject.links = getPaginationLinks(response.sourcePagination, term, subject, courseNumber, q)
 
-            ResponseBuilder responseBuilder = ok(resultObject)
-            responseBuilder.build()
+            ok(resultObject).build()
         } catch (Exception e) {
+            logger.error("Exception while getting all terms", e)
             internalServerError("Woot you found a bug for us to fix!").build()
         }
     }
 
-    private void setPaginationLinks(def sourcePagination, String term, String subject, String courseNumber, String q,
-                                    ResultObject resultObject) {
+    private HashMap getPaginationLinks(def sourcePagination, String term, String subject, 
+                                       String courseNumber, String q) {
+        def links = [:]
         // If no results were found, no need to add links
         if (!sourcePagination?.totalCount) {
             return
@@ -81,24 +81,26 @@ class ClassSearchResource extends Resource {
 
         int lastPage = Math.ceil(sourcePagination.totalCount / pageSize)
 
-        resultObject.links["self"] = getPaginationUrl(urlParams)
+        links["self"] = getPaginationUrl(urlParams)
         urlParams.pageNumber = 1
-        resultObject.links["first"] = getPaginationUrl(urlParams)
+        links["first"] = getPaginationUrl(urlParams)
         urlParams.pageNumber = lastPage
-        resultObject.links["last"] = getPaginationUrl(urlParams)
+        links["last"] = getPaginationUrl(urlParams)
 
         if (pageNumber > DEFAULT_PAGE_NUMBER) {
             urlParams.pageNumber = pageNumber - 1
-            resultObject.links["prev"] = getPaginationUrl(urlParams)
+            links["prev"] = getPaginationUrl(urlParams)
         } else {
-            resultObject.links["prev"] = null
+            links["prev"] = null
         }
 
         if (sourcePagination?.totalCount > (pageNumber * pageSize)) {
             urlParams.pageNumber = pageNumber + 1
-            resultObject.links["next"] = getPaginationUrl(urlParams)
+            links["next"] = getPaginationUrl(urlParams)
         } else {
-            resultObject.links["next"] = null
+            links["next"] = null
         }
+
+        links
     }
 }
