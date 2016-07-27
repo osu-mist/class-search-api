@@ -28,7 +28,7 @@ class ClassSearchApplication extends Application<ClassSearchConfiguration> {
      */
     @Override
     public void run(ClassSearchConfiguration configuration, Environment environment) {
-        Resource.loadProperties('resource.properties')
+        Resource.loadProperties()
         environment.jersey().register(new InfoResource())
 
         // the httpclient from DW provides with many metrics and config options
@@ -40,7 +40,7 @@ class ClassSearchApplication extends Application<ClassSearchConfiguration> {
         UtilHttp utilHttp = new UtilHttp(configuration.classSearch)
 
         // setup dao
-        final ClassSearchDAO classSearchDAO = new ClassSearchDAO(utilHttp, httpClient)
+        ClassSearchDAO classSearchDAO = new ClassSearchDAO(utilHttp, httpClient)
 
         def classSearchResource = new ClassSearchResource(classSearchDAO)
         classSearchResource.setEndpointUri(configuration.getApi().getEndpointUri())

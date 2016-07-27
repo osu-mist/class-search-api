@@ -19,7 +19,7 @@ import javax.ws.rs.core.MediaType
 
 @Path('/class-search/')
 class ClassSearchResource extends Resource {
-    Logger logger = LoggerFactory.getLogger(ClassSearchResource.class);
+    Logger logger = LoggerFactory.getLogger(ClassSearchResource.class)
 
     public static final int TERM_LENGTH = 6
     private final ClassSearchDAO classSearchDAO
@@ -33,7 +33,8 @@ class ClassSearchResource extends Resource {
     @Timed
     public Response classSearch(@Auth AuthenticatedUser _, @NotNull @QueryParam('term') String term,
                                @QueryParam('subject') String subject,
-                               @QueryParam('courseNumber') String courseNumber, @QueryParam('q') String q) {
+                               @QueryParam('courseNumber') String courseNumber,
+                                @QueryParam('q') String q) {
         try {
             // validate parameters
             if (!term || !term.trim()) {
@@ -48,10 +49,12 @@ class ClassSearchResource extends Resource {
                 return badRequest("subject is a required parameter").build()
             }
 
-            def response = classSearchDAO.getData(term, subject, courseNumber, q, getPageNumber(), getPageSize())
+            def response = classSearchDAO.getData(term, subject, courseNumber, q, pageNumber,
+                    getPageSize())
             //@todo: these params are calcualted twice :(
             ResultObject resultObject = new ResultObject(data: response.data)
-            resultObject.links = getPaginationLinks(response.sourcePagination, term, subject, courseNumber, q)
+            resultObject.links = getPaginationLinks(response.sourcePagination, term, subject,
+                    courseNumber, q)
 
             ok(resultObject).build()
         } catch (Exception e) {
