@@ -4,7 +4,7 @@ class Attributes {
     String campusDescription
     String courseNumber
     String crn
-    String sectionTitle
+    String courseTitle
     Integer creditHourHigh
     Integer creditHourLow
     Integer creditHours

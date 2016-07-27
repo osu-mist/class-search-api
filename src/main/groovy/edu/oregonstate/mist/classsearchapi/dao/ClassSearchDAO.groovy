@@ -115,7 +115,7 @@ class ClassSearchDAO {
                     campusDescription:          it.campusDescription,
                     courseNumber:               it.courseNumber,
                     crn:                        it.courseReferenceNumber,
-                    sectionTitle:               it.sectionTitle,
+                    courseTitle:                it.courseTitle,
                     creditHourHigh:             it.creditHourHigh,
                     creditHourLow:              it.creditHourLow,
                     creditHours:                it.creditHours,
