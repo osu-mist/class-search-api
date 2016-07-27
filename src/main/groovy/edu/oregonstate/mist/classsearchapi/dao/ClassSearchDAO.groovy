@@ -191,7 +191,7 @@ class ClassSearchDAO {
             query['keyword'] = q.trim()
         }
         if (pageNumber && pageNumber > 1) {
-            query['offset'] = pageSize * pageNumber
+            query['offset'] = pageSize * (pageNumber -1)
         }
         if (pageSize) {
             query['max'] = pageSize
