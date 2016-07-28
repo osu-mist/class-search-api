@@ -9,36 +9,31 @@ HTTPS is required for Web APIs in development and production. Use `keytool(1)` t
 Generate key pair and keystore:
 
     $ keytool \
-        -genkey \
+        -genkeypair \
         -dname "CN=Jane Doe, OU=Enterprise Computing Services, O=Oregon State University, L=Corvallis, S=Oregon, C=US" \
-        -alias "doej" \
-        -keyalg "RSA" \
+        -ext "san=dns:localhost,ip:127.0.0.1" \
+        -alias doej \
+        -keyalg RSA \
         -keysize 2048 \
+        -sigalg SHA256withRSA \
         -validity 365 \
-        -keystore doej.keystore
-
-Create self-signed certificate:
-
-    $ keytool \
-        -selfcert \
-        -alias "doej" \
-        -sigalg "SHA256withRSA" \
         -keystore doej.keystore
 
 Export certificate to file:
 
     $ keytool \
-        -export \
+        -exportcert \
+        -rfc \
         -alias "doej" \
         -keystore doej.keystore \
-        -file doej.cer
+        -file doej.pem
 
 Import certificate into truststore:
 
     $ keytool \
-        -import \
+        -importcert \
         -alias "doej" \
-        -file doej.cer \
+        -file doej.pem \
         -keystore doej.truststore
 
 ## Gradle
@@ -85,6 +80,25 @@ Run the project:
 
     $ gradle run
 
+## Base a New Project off the Skeleton
+
+Clone the skeleton:
+
+    $ git clone --origin skeleton git@github.com:osu-mist/web-api-skeleton.git my-api
+    $ cd my-api
+
+Rename the webapiskeleton package and SkeletonApplication class:
+
+    $ git mv src/main/groovy/edu/oregonstate/mist/webapiskeleton src/main/groovy/edu/oregonstate/mist/myapi
+    $ vim src/main/groovy/edu/oregonstate/mist/myapi/SkeletonApplication.class
+
+Update gradle.properties with your package name and main class.
+
+Replace swagger.yaml with your own API specification.
+
+Update configuration-example.yaml as appropriate for your application.
+
+Update the resource examples at the end of this readme.
 
 ## Base an Existing Project off the Skeleton
 
@@ -93,37 +107,34 @@ Add the skeleton as a remote:
     $ git remote add skeleton git@github.com:osu-mist/web-api-skeleton.git
     $ git fetch skeleton
 
-Create a branch to track the skeleton:
-
-    $ git checkout -b skeleton-master skeleton/master
-
 Merge the skeleton into your codebase:
 
     $ git checkout feature/abc-123-branch
-    $ git merge skeleton-master
+    $ git merge skeleton/master
     ...
     $ git commit -v
 
 
 ## Incorporate Updates from the Skeleton
 
-Ensure that branch `skeleton-master` is tracking remote `skeleton`:
-
-    $ git branch -u skeleton/master skeleton-master
-
-Update local branch:
+Fetch updates from the skeleton:
 
     $ git fetch skeleton
-    $ git pull
 
-Merge the updates into your codebase as before. Note that changes to CodeNarc configuration may introduce build failures.
+Merge the updates into your codebase as before.
+Note that changes to CodeNarc configuration may introduce build failures.
+
+    $ git checkout feature/abc-124-branch
+    $ git merge skeleton/master
+    ...
+    $ git commit -v
 
 
 ## Resources
 
 The Web API definition is contained in the [Swagger specification](swagger.yaml).
 
-The following examples demonstrate the use of `openssl s_client` and `curl` to make authenticated HTTPS requests.
+The following examples demonstrate the use of `curl` to make authenticated HTTPS requests.
 
 ### GET /api/v1/
 

@@ -51,7 +51,7 @@ class ClassSearchDAO {
 
             data = this.mapper.readValue(entityString,
                     new TypeReference<List<HashMap>>() {
-                });
+                })
 
             sourcePagination = getSourcePagination(response.getAllHeaders())
             EntityUtils.consume(entity)
@@ -90,7 +90,10 @@ class ClassSearchDAO {
             String status = getStatus(it)
 
             it.faculty.each { f ->
-                faculty << new Faculty(displayName: f.displayName, primaryFaculty: f.primaryIndicator)
+                faculty << new Faculty(
+                        displayName: f.displayName,
+                        primaryFaculty: f.primaryIndicator
+                )
             }
             it.meetingTimes.each { k ->
                 meetingTimes << new MeetingTime(
@@ -115,7 +118,7 @@ class ClassSearchDAO {
                     campusDescription:          it.campusDescription,
                     courseNumber:               it.courseNumber,
                     crn:                        it.courseReferenceNumber,
-                    sectionTitle:               it.sectionTitle,
+                    courseTitle:                it.courseTitle,
                     creditHourHigh:             it.creditHourHigh,
                     creditHourLow:              it.creditHourLow,
                     creditHours:                it.creditHours,
@@ -198,6 +201,4 @@ class ClassSearchDAO {
         }
         query
     }
-
-
 }

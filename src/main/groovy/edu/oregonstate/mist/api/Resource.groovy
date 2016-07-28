@@ -1,9 +1,9 @@
 package edu.oregonstate.mist.api
 
 import javax.ws.rs.core.Context
-import javax.ws.rs.core.MultivaluedMap
 import javax.ws.rs.core.Response
 import javax.ws.rs.core.Response.ResponseBuilder
+import org.apache.http.client.utils.URIBuilder
 import javax.ws.rs.core.UriInfo
 
 /**
@@ -30,8 +30,12 @@ abstract class Resource {
      */
     private URI endpointUri
 
-    public static loadProperties(String fileName) {
-        properties.load(new FileReader(fileName))
+    public static loadProperties() {
+        def stream = this.getResourceAsStream('resource.properties')
+        if (stream == null) {
+            throw new Exception("couldn't open resource.properties")
+        }
+        properties.load(stream)
     }
 
     /**
@@ -117,51 +121,22 @@ abstract class Resource {
      * @return
      */
     protected String getPaginationUrl(def params) {
-        def uriAndPath = endpointUri.toString() + uriInfo.getPath()
+        URIBuilder uriBuilder = new URIBuilder(endpointUri).setPath(uriInfo.requestUri.path)
+
+        // use a copy of params since other parameters could be present
         def nonNullParams = params.clone()
-        // convert pageVariable to page[variable]
-        nonNullParams["page[number]"] = nonNullParams['pageNumber']
-        nonNullParams["page[size]"] = nonNullParams['pageSize']
         nonNullParams.remove('pageSize')
         nonNullParams.remove('pageNumber')
 
-        // remove empty GET parameters
-        nonNullParams = nonNullParams.findAll { it.value } .collect { k, v -> "$k=$v" }
+        // convert pageVariable to page[variable]
+        nonNullParams["page[number]"] = params['pageNumber']
+        nonNullParams["page[size]"] = params['pageSize']
 
-        uriAndPath + "?" + nonNullParams.join('&')
-    }
-
-    /**
-     * Returns the value for an array parameter in the GET string.
-     *
-     * The JSONAPI format reserves the page parameter for pagination. This API uses page[size] and
-     * page[number].
-     * This function allows us to get just value for a specific parameter in an array.
-     *
-     * @param key
-     * @param index
-     * @param queryParameters
-     * @return
-     */
-    protected static String getArrayParameter(String key, String index,
-                                              MultivaluedMap<String, String> queryParameters) {
-        for (Map.Entry<String, List<String>> entry : queryParameters.entrySet()) {
-            // not an array parameter
-            if (!entry.key.contains("[") && !entry.key.contains("]")) {
-                continue
-            }
-
-            int a = entry.key.indexOf('[')
-            int b = entry.key.indexOf(']')
-
-            if (entry.key.substring(0, a).equals(key)) {
-                if (entry.key.substring(a + 1, b).equals(index)) {
-                    return entry.value?.get(0)
-                }
-            }
+        nonNullParams.findAll { it.value } .collect { k, v ->
+            uriBuilder.setParameter(k, v.toString())
         }
 
-        null
+        uriBuilder.build().toString()
     }
 
     /**
@@ -170,7 +145,7 @@ abstract class Resource {
      * @return
      */
     protected Integer getPageNumber() {
-        def pageNumber = getArrayParameter("page", "number", uriInfo.getQueryParameters())
+        def pageNumber = uriInfo.getQueryParameters().getFirst('page[number]')
         if (!pageNumber || !pageNumber.isInteger()) {
             return DEFAULT_PAGE_NUMBER
         }
@@ -184,7 +159,7 @@ abstract class Resource {
      * @return
      */
     protected Integer getPageSize() {
-        def pageSize = getArrayParameter("page", "size", uriInfo.getQueryParameters())
+        def pageSize = uriInfo.getQueryParameters().getFirst('page[size]')
         if (!pageSize || !pageSize.isInteger()) {
             return DEFAULT_PAGE_SIZE
         }

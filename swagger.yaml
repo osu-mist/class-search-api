@@ -91,9 +91,9 @@ definitions:
       crn:
         type: string
         description: "Course Reference Number used to uniquely identify a class available for registration. This is the CRN value that students use to register for a class section."
-      sectionTitle:
+      courseTitle:
         type: string
-        description: "Title of the course section"
+        description: "Title of the course"
       creditHourHigh:
         type: integer
         description: "Maximum number of credit hours for a course. Used in variable credit courses."
