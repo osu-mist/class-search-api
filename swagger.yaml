@@ -5,7 +5,7 @@ info:
   title: Class Search API
 
 paths:
-  /class-search:
+  /courses:
     get:
       tags:
        - classes

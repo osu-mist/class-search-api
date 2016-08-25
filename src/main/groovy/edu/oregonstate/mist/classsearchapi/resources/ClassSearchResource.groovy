@@ -17,7 +17,7 @@ import javax.ws.rs.QueryParam
 import javax.ws.rs.core.Response
 import javax.ws.rs.core.MediaType
 
-@Path('/class-search/')
+@Path('/courses/')
 class ClassSearchResource extends Resource {
     Logger logger = LoggerFactory.getLogger(ClassSearchResource.class)
 
