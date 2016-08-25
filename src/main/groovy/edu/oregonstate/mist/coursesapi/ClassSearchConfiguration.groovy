@@ -1,4 +1,4 @@
-package edu.oregonstate.mist.classsearchapi
+package edu.oregonstate.mist.coursesapi
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import edu.oregonstate.mist.api.Configuration

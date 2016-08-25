@@ -1,11 +1,11 @@
-package edu.oregonstate.mist.classsearchapi.dao
+package edu.oregonstate.mist.coursesapi.dao
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import edu.oregonstate.mist.api.jsonapi.ResourceObject
-import edu.oregonstate.mist.classsearchapi.core.Attributes
-import edu.oregonstate.mist.classsearchapi.core.Faculty
-import edu.oregonstate.mist.classsearchapi.core.MeetingTime
+import edu.oregonstate.mist.coursesapi.core.Attributes
+import edu.oregonstate.mist.coursesapi.core.Faculty
+import edu.oregonstate.mist.coursesapi.core.MeetingTime
 import org.apache.http.HttpEntity
 import org.apache.http.client.HttpClient
 import org.apache.http.client.methods.CloseableHttpResponse
