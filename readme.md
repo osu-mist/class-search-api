@@ -214,7 +214,7 @@ This resource returns build and runtime information:
     
     {"name":"courses-api","time":1467959701699,"commit":"4ba4715","documentation":"swagger.yaml"}closed
 
-### GET /api/v1/coursesterm={term}&subject={subject}&courseNumber={courseNumber}&q={searchQuery}
+### GET /api/v1/courses?term={term}&subject={subject}&courseNumber={courseNumber}&q={searchQuery}
 
 This resource returns an array of objects representing the courses matching the search query:
 
