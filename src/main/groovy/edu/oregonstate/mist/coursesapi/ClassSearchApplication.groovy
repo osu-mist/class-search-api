@@ -1,14 +1,13 @@
-package edu.oregonstate.mist.classsearchapi
+package edu.oregonstate.mist.coursesapi
 
-import edu.oregonstate.mist.api.Configuration
 import edu.oregonstate.mist.api.Resource
 import edu.oregonstate.mist.api.InfoResource
 import edu.oregonstate.mist.api.AuthenticatedUser
 import edu.oregonstate.mist.api.BasicAuthenticator
-import edu.oregonstate.mist.classsearchapi.dao.ClassSearchDAO
-import edu.oregonstate.mist.classsearchapi.dao.UtilHttp
-import edu.oregonstate.mist.classsearchapi.health.BackendHealth
-import edu.oregonstate.mist.classsearchapi.resources.ClassSearchResource
+import edu.oregonstate.mist.coursesapi.dao.ClassSearchDAO
+import edu.oregonstate.mist.coursesapi.dao.UtilHttp
+import edu.oregonstate.mist.coursesapi.health.BackendHealth
+import edu.oregonstate.mist.coursesapi.resources.ClassSearchResource
 import io.dropwizard.Application
 import io.dropwizard.client.HttpClientBuilder
 import io.dropwizard.setup.Environment

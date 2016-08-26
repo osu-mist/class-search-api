@@ -1,4 +1,4 @@
-package edu.oregonstate.mist.classsearchapi.core
+package edu.oregonstate.mist.coursesapi.core
 
 class Attributes {
     String campusDescription
