@@ -80,6 +80,28 @@ Run the project:
 
     $ gradle run
 
+## Contrib Files
+
+Any code that contains intellectual property from a vendor should be stored in Github Enterprise instead of public Github. Make the name of the contrib repo in Github Enterprise follow this format using archivesBaseName in gradle.properties.
+
+    archivesBaseName-contrib
+
+Set the value of getContribFiles to yes in gradle.properties.
+
+    getContribFiles=yes
+
+Also set the value of contribCommit to the SHA1 of the desired commit to be used from the contrib repository.
+
+    contribCommit={SHA1}
+    
+Files in a Github Enterprise repo will be copied to this directory upon building the application.
+
+    gradle build
+
+Contrib files are copied to:
+
+    /src/main/groovy/edu/oregonstate/mist/contrib/
+    
 ## Base a New Project off the Skeleton
 
 Clone the skeleton:
@@ -239,3 +261,4 @@ An error is returned if the request is invalid:
       --user "username:password" \
       'https://localhost:8080/api/v1/courses/?term=xx'
     {"status":400,"developerMessage":"term should be a 6 digit code","userMessage":"Bad Request - the application submitted invalid data. Please try again.","code":1400,"details":"https://developer.oregonstate.edu/documentation/error-reference#1400"}
+
