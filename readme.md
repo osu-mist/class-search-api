@@ -2,6 +2,13 @@
 
 Class Search API to query the course catalog in real time for course information and availability.
 
+### Dropwizard and JDK
+
+Current implementations of the Dropwizard and JDK.
+
+* [Dropwizard 1.0.2](http://www.dropwizard.io/1.0.2/docs/)
+* [JDK 8](https://jdk8.java.net/)
+
 ### Generate Keys
 
 HTTPS is required for Web APIs in development and production. Use `keytool(1)` to generate public and private keys.
