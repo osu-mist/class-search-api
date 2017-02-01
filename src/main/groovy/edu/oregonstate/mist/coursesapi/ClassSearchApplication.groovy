@@ -64,7 +64,6 @@ class ClassSearchApplication extends Application<ClassSearchConfiguration> {
     public void run(ClassSearchConfiguration configuration, Environment environment) {
         Resource.loadProperties()
         BuildInfoManager buildInfoManager = new BuildInfoManager()
-        environment.jersey().register(new InfoResource())
 
         // the httpclient from DW provides with many metrics and config options
         HttpClient httpClient = new HttpClientBuilder(environment)
