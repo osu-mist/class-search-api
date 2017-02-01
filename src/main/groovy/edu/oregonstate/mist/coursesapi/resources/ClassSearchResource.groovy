@@ -31,9 +31,10 @@ class ClassSearchResource extends Resource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Timed
-    public Response classSearch(@Auth AuthenticatedUser _, @NotNull @QueryParam('term') String term,
-                               @QueryParam('subject') String subject,
-                               @QueryParam('courseNumber') String courseNumber,
+    public Response classSearch(@Auth AuthenticatedUser _,
+                                @QueryParam('term') String term,
+                                @QueryParam('subject') String subject,
+                                @QueryParam('courseNumber') String courseNumber,
                                 @QueryParam('q') String q) {
         try {
             // validate parameters

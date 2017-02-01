@@ -45,8 +45,10 @@ paths:
           description: "Page number of results. Used to paginate through results."
           required: false
           type: string
-
-
+      summary: Get information
+      description: Build and runtime information about the application.
+      parameters:
+        - $ref: '#/parameters/pretty'
       responses:
         "200":
           description: "Successful response"
@@ -60,6 +62,14 @@ paths:
           description: "Internal Server Error"
           schema:
             $ref: "#/definitions/Error"
+
+parameters:
+  pretty:
+    name: pretty
+    in: query
+    type: boolean
+    required: false
+    description: If true, JSON response will be pretty-printed
 
 definitions:
   ResultObjects:
@@ -226,18 +236,35 @@ definitions:
         type: string
       next:
         type: string
-
+        description: Name of the API.
+      time:
+        type: string
+        description: Build time in ISO 8601 format.
+      unixTime:
+        type: integer
+        description: Build time as milliseconds since the unix epoch.
+      commit:
+        type: string
+        description: Git commit hash of the revision which was built.
+      documentation:
+        type: string
+        description: Filename of the swagger specification for the API.
   Error:
     type: object
     properties:
       status:
         type: integer
         format: int32
+        description: HTTP status code.
       developerMessage:
         type: string
+        description: An error string aimed at developers.
       userMesage:
         type: string
+        description: An error string aimed at end users.
       code:
         type: integer
+        description: Error code.
       details:
         type: string
+        description: A link to further information about the error.
