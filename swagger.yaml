@@ -50,8 +50,8 @@ paths:
           description: "Successful response"
           schema:
             $ref: "#/definitions/CoursesResultObject"
-        "404":
-          description: "Not Found"
+        "400":
+          description: "Bad request"
           schema:
             $ref: "#/definitions/Error"
         "500":
@@ -72,10 +72,6 @@ paths:
           description: "Successful response"
           schema:
             $ref: "#/definitions/SubjectsResultObject"
-        "404":
-          description: "Not Found"
-          schema:
-            $ref: "#/definitions/Error"
         "500":
           description: "Internal Server Error"
           schema:
@@ -119,10 +115,6 @@ paths:
           description: "Successful response"
           schema:
             $ref: "#/definitions/TermsResultObject"
-        "404":
-          description: "Not Found"
-          schema:
-            $ref: "#/definitions/Error"
         "500":
           description: "Internal Server Error"
           schema:
