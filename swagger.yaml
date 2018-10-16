@@ -223,25 +223,31 @@ definitions:
             description: Description of the term.
             type: string
             example: "Fall 2018"
-          classFormat:
-            description: Format of the course.
+          scheduleDescription:
+            description: Human readable schedule type for the course (agnostic of meeting times).
             type: string
             example: "Lecture"
+          scheduleType:
+            description: Type of schedule for the course (agnostic of meeting times).
+            type: string
+            example: "A"
+            enum: [B, C, D, E, F, G, H, I, J, K, A, L, M, N, O, P , Q, R, S, T, U, W, Y, Z, V, X, MID, FIL, HYB]
           creditHours:
             description: Credit hours of the course.
             type: integer
             example: 3
-          registrationStatus:
-            description: The student's registration status for the course.
-            type: string
-            example: "Web Registered"
-          gradingMode:
-            description: The grading mode for the course.
-            type: string
-            example: "Normal Grading Mode"
-          continuingEducation:
-            description: Identifies whether the course is enrolled for continuing education credits.
-            type: boolean
+          waitlistAvailable:
+            description: Available seats on waitlist for this section.
+            type: integer
+            example: 5
+          waitlistCapacity:
+            description: Total capacity of the waitlist for this section.
+            type: integer
+            example: 5
+          waitlistCount:
+            description: Current count of filled seats on the waitlist for this section.
+            type: integer
+            example: 0
           faculty:
             description: Faculty and instructors associated with this course.
             type: array
@@ -312,6 +318,41 @@ definitions:
                   description: Session credit hours for this meeting time.
                   type: integer
                   example: 2
+                scheduleType:
+                  description: |
+                    Type of schedule for this given meeting type.
+                    B: Discussion
+                    C: Recitation
+                    D: Laboratory
+                    E: Seminar
+                    F: Independent or Special Studies
+                    G: Research
+                    H: Activity
+                    I: Experimental
+                    J: Internship
+                    K: Streaming Media
+                    A: Lecture
+                    L: Tutorial
+                    M: Practicum
+                    N: Reading and Conference
+                    O: Experiential/Co-op Education
+                    P: Programmed Instruction
+                    Q: Thesis
+                    R: Studio
+                    S: Project
+                    T: Telecourse/Distance Learning
+                    U: Externship
+                    W: Workshop
+                    Y: Online
+                    Z: Modular
+                    V: Examination for Credit
+                    X: One-time Event
+                    MID: Midterm Exam
+                    FNL: Final Exam
+                    HYB: Hybrid
+                  type: string
+                  example: "A"
+                  enum: [B, C, D, E, F, G, H, I, J, K, A, L, M, N, O, P , Q, R, S, T, U, W, Y, Z, V, X, MID, FIL, HYB]
                 meetsSunday:
                   description: Whether this meeting time meets on Sunday.
                   type: boolean
