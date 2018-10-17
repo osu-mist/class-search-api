@@ -353,34 +353,24 @@ definitions:
                   type: string
                   example: "A"
                   enum: [B, C, D, E, F, G, H, I, J, K, A, L, M, N, O, P , Q, R, S, T, U, W, Y, Z, V, X, MID, FIL, HYB]
-                meetsSunday:
-                  description: Whether this meeting time meets on Sunday.
-                  type: boolean
-                  example: false
-                meetsMonday:
-                  description: Whether this meeting time meets on Monday.
-                  type: boolean
-                  example: true
-                meetsTuesday:
-                  description: Whether this meeting time meets on Tuesday.
-                  type: boolean
-                  example: false
-                meetsWednesday:
-                  description: Whether this meeting time meets on Wednesday.
-                  type: boolean
-                  example: true
-                meetsThursday:
-                  description: Whether this meeting time meets on Thursday.
-                  type: boolean
-                  example: false
-                meetsFriday:
-                  description: Whether this meeting time meets on Friday.
-                  type: boolean
-                  example: true
-                meetsSaturday:
-                  description: Whether this meeting time meets on Saturday.
-                  type: boolean
-                  example: false
+                weeklySchedule:
+                  description: |
+                    Array of day abbreviations to represent which days of the week this meeting time occurs on.
+                    If an abbreviation is present in the array, the meeting time meets on that day of the week.
+                    The meeting time does not meet on any days of the week which aren't in the array.
+                    Abbreviations and their corresponding day of the week:
+                    M: Monday
+                    T: Tuesday
+                    W: Wednesday
+                    Th: Thursday
+                    F: Friday
+                    Sa: Saturday
+                    Su: Sunday
+                  type: array
+                  example: ["M", "W", "F"]
+                  items:
+                    type: string
+                    enum:  [M, T, W, Th, F, Sa, Su]
   SubjectsResultObject:
     properties:
       links:
