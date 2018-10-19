@@ -7,9 +7,15 @@ import edu.oregonstate.mist.coursesapi.core.Attributes
 import edu.oregonstate.mist.coursesapi.core.Faculty
 import edu.oregonstate.mist.coursesapi.core.MeetingTime
 import org.apache.http.HttpEntity
+import org.apache.http.HttpHeaders
+import org.apache.http.HttpResponse
+import org.apache.http.HttpStatus
 import org.apache.http.client.HttpClient
 import org.apache.http.client.methods.CloseableHttpResponse
+import org.apache.http.client.methods.HttpGet
 import org.apache.http.util.EntityUtils
+
+import javax.ws.rs.core.UriBuilder
 
 class ClassSearchDAO {
     private static final String STATUS_CLOSED = 'Closed'
@@ -25,128 +31,59 @@ class ClassSearchDAO {
         this.utilHttp = utilHttp
     }
 
-    /**
-     * Performs class search and returns results in jsonapi format
-     *
-     * @param term
-     * @param subject
-     * @param courseNumber
-     * @param q
-     * @param pageNumber
-     * @param pageSize
-     * @return
-     */
-    public def getData(String term, String subject, String courseNumber, String q,
-                       Integer pageNumber, Integer pageSize) {
-        CloseableHttpResponse response
-        def data = []
-        def sourcePagination = [totalCount: 0, pageOffset: 0, pageMaxSize: 0]
+    private String getResponse(String endpoint, String term = null) {
+        UriBuilder uriBuilder = UriBuilder.fromUri(baseURI)
+        uriBuilder.path(endpoint)
 
-        try {
-            def query = getQueryMap(term, subject, courseNumber, q, pageNumber, pageSize)
-            response = utilHttp.sendGet(query, httpClient)
-
-            HttpEntity entity = response.getEntity()
-            def entityString = EntityUtils.toString(entity)
-
-            data = this.mapper.readValue(entityString,
-                    new TypeReference<List<HashMap>>() {
-                })
-
-            sourcePagination = getSourcePagination(response.getAllHeaders())
-            EntityUtils.consume(entity)
-        } finally {
-            response?.close()
+        if (term) {
+            uriBuilder.queryParam("term", term)
         }
 
-        [data: getFormattedData(data), sourcePagination: sourcePagination]
-    }
+        URI requestURI = uriBuilder.build()
 
-    private static getSourcePagination(headers) {
-        def headerMap = [:]
-        headers.each {
-            headerMap[it.name] = it.value
-        }
+        HttpGet request = new HttpGet(requestURI)
+        request.setHeader(HttpHeaders.ACCEPT, "application/json")
 
-        [
-            totalCount: headerMap['X-hedtech-totalCount']?.toInteger(),
-            pageOffset: headerMap['X-hedtech-pageOffset']?.toInteger(),
-            pageMaxSize: headerMap['X-hedtech-pageMaxSize']?.toInteger()
-        ]
-    }
+        logger.info("Making a request to ${requestURI}")
 
-    /**
-     * Takes the data from the backend and formats it based on the swagger spec.
-     *
-     * @param data
-     * @return
-     */
-    private static List<ResourceObject> getFormattedData(def data) {
-        List<ResourceObject> result = new ArrayList<ResourceObject>()
+        HttpResponse response = httpClient.execute(request)
 
-        data.each {
-            List<Faculty> faculty = new ArrayList<Faculty>()
-            List<MeetingTime> meetingTimes = new ArrayList<MeetingTime>()
-            String status = getStatus(it)
+        Integer statusCode = response.getStatusLine().getStatusCode()
 
-            it.faculty.each { f ->
-                faculty << new Faculty(
-                        displayName: f.displayName,
-                        primaryFaculty: f.primaryIndicator
-                )
+        if (statusCode == HttpStatus.SC_OK) {
+            logger.info("Successful response from backend data source.")
+            EntityUtils.toString(response.entity)
+        } else if (statusCode == HttpStatus.SC_NOT_FOUND) {
+            EntityUtils.consumeQuietly(response.entity)
+
+            String message = "Student not found"
+            logger.info(message)
+
+            throw new StudentNotFoundException(message)
+        } else if (statusCode == HttpStatus.SC_BAD_REQUEST) {
+            List<String> errorMessages = getBackendErrorMessages(
+                    EntityUtils.toString(response.entity))
+
+            logger.info("400 response from backend data source. Error messages: $errorMessages")
+
+            if (errorMessages.contains("Term not found")) {
+                String message = "Term: $term is invalid."
+                logger.info(message)
+
+                throw new InvalidTermException(message)
+            } else {
+                String message = "Uncaught error(s) in bad request."
+                logger.error(message)
+
+                throw new Exception(message)
             }
-            it.meetingTimes.each { k ->
-                meetingTimes << new MeetingTime(
-                        startTime:          k.beginTime,
-                        endTime:            k.endTime,
-                        building:           k.building,
-                        buildingName:       k.buildingDescription,
-                        room:               k.room,
-                        campus:             k.campus,
-                        campusDescription:  k.campusDescription,
-                        monday:             k.monday,
-                        tuesday:            k.tuesday,
-                        wednesday:          k.wednesday,
-                        thursday:           k.thursday,
-                        friday:             k.friday,
-                        saturday:           k.saturday,
-                        sunday:             k.sunday
-                )
-            }
+        } else {
+            String message = "Unexpected response from backend data source. " +
+                    "Status code: $statusCode"
+            logger.error(message)
 
-            Attributes attributes = new Attributes(
-                    campusDescription:          it.campusDescription,
-                    courseNumber:               it.courseNumber,
-                    crn:                        it.courseReferenceNumber,
-                    courseTitle:                it.courseTitle,
-                    creditHourHigh:             it.creditHourHigh,
-                    creditHourLow:              it.creditHourLow,
-                    creditHours:                it.creditHours,
-                    enrollment:                 it.enrollment,
-                    maximumEnrollment:          it.maximumEnrollment,
-                    openSection:                it.openSection,
-                    termStartDate:              it.partOfTermStartDate,
-                    termEndDate:                it.partOfTermEndDate,
-                    termWeeks:                  it.partOfTermWeeks,
-                    scheduleTypeDescription:    it.scheduleTypeDescription,
-                    section:                    it.sequenceNumber,
-                    status:                     status,
-                    subject:                    it.subject,
-                    subjectCourse:              it.subjectCourse,
-                    subjectDescription:         it.subjectDescription,
-                    term:                       it.term,
-                    termDescription:            it.termDesc,
-                    waitCapacity:               it.waitCapacity,
-                    waitCount:                  it.waitCount,
-                    faculty:                    faculty,
-                    meetingTimes:               meetingTimes
-            )
-
-            result << new ResourceObject(id: it.courseReferenceNumber, type: 'course',
-                    attributes: attributes)
+            throw new Exception(message)
         }
-
-        result
     }
 
     /**

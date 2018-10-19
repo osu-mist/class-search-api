@@ -7,7 +7,11 @@ import edu.oregonstate.mist.coursesapi.health.BackendHealth
 import edu.oregonstate.mist.coursesapi.resources.ClassSearchResource
 import io.dropwizard.client.HttpClientBuilder
 import io.dropwizard.setup.Environment
+import org.apache.http.auth.AuthScope
+import org.apache.http.auth.UsernamePasswordCredentials
+import org.apache.http.client.CredentialsProvider
 import org.apache.http.client.HttpClient
+import org.apache.http.impl.client.BasicCredentialsProvider
 
 /**
  * Main application class.
@@ -20,26 +24,37 @@ class ClassSearchApplication extends Application<ClassSearchConfiguration> {
      * @param environment
      */
     @Override
-    public void run(ClassSearchConfiguration configuration, Environment environment) {
+    public void run(StudentsConfiguration configuration, Environment environment) {
         this.setup(configuration, environment)
-        // the httpclient from DW provides with many metrics and config options
-        HttpClient httpClient = new HttpClientBuilder(environment)
-                .using(configuration.getHttpClientConfiguration())
-                .build("backend-http-client")
 
-        // reusable UtilHttp instance for both DAO and healthcheck
-        UtilHttp utilHttp = new UtilHttp(configuration.classSearch)
 
-        // setup dao
-        ClassSearchDAO classSearchDAO = new ClassSearchDAO(utilHttp, httpClient)
+        HttpStudentsDAO httpStudentsDAO = new HttpStudentsDAO(
+                getHttpClient(configuration, environment),
+                configuration.httpDataSource.endpoint
+        )
 
-        def classSearchResource = new ClassSearchResource(classSearchDAO)
-        classSearchResource.setEndpointUri(configuration.getApi().getEndpointUri())
-        environment.jersey().register(classSearchResource)
+        environment.jersey().register(new ClassSearchResource(
+                studentsDAOWrapper, configuration.api.endpointUri))
 
-        // healthchecks
-        environment.healthChecks().register("backend",
-                new BackendHealth(utilHttp, httpClient))
+    }
+
+    HttpClient getHttpClient(ClassSearchConfiguration configuration, Environment environment) {
+        def httpClientBuilder = new HttpClientBuilder(environment)
+
+        if (configuration.httpClient != null) {
+            httpClientBuilder.using(configuration.httpClient)
+        }
+
+        CredentialsProvider provider = new BasicCredentialsProvider()
+        UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(
+                configuration.httpDataSource.username,
+                configuration.httpDataSource.password
+        )
+        provider.setCredentials(AuthScope.ANY, credentials)
+
+        httpClientBuilder.using(provider)
+
+        httpClientBuilder.build("backend-http-client")
     }
 
     /**
