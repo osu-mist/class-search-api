@@ -4,6 +4,7 @@ import com.codahale.metrics.annotation.Timed
 import edu.oregonstate.mist.api.Resource
 import edu.oregonstate.mist.api.AuthenticatedUser
 import edu.oregonstate.mist.api.jsonapi.ResultObject
+import edu.oregonstate.mist.coursesapi.ClassSearchUriBuilder
 import edu.oregonstate.mist.coursesapi.dao.ClassSearchDAO
 import groovy.transform.TypeChecked
 import io.dropwizard.auth.Auth
@@ -27,10 +28,13 @@ class ClassSearchResource extends Resource {
     Logger logger = LoggerFactory.getLogger(ClassSearchResource.class)
 
     public static final int TERM_LENGTH = 6
-    private final ClassSearchDAO classSearchDAO
 
-    ClassSearchResource(ClassSearchDAO classSearchDAO) {
+    private final ClassSearchDAO classSearchDAO
+    private ClassSearchUriBuilder uriBuilder
+
+    ClassSearchResource(ClassSearchDAO classSearchDAO, URI endpointUri) {
         this.classSearchDAO = classSearchDAO
+        this.uriBuilder = new ClassSearchUriBuilder(endpointUri)
     }
 
 

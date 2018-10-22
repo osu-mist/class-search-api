@@ -2,6 +2,7 @@ package edu.oregonstate.mist.coursesapi.dao
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import edu.oregonstate.mist.api.jsonapi.ResourceObject
 import edu.oregonstate.mist.coursesapi.core.Attributes
 import edu.oregonstate.mist.coursesapi.core.Faculty
@@ -14,6 +15,8 @@ import org.apache.http.client.HttpClient
 import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.util.EntityUtils
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import javax.ws.rs.core.UriBuilder
 
@@ -22,13 +25,16 @@ class ClassSearchDAO {
     private static final String STATUS_OPEN = 'Open'
     private static final String STATUS_WAITLISTED = 'Waitlisted'
 
-    private UtilHttp utilHttp
     private HttpClient httpClient
-    private ObjectMapper mapper = new ObjectMapper()
+    private final URI baseURI
 
-    ClassSearchDAO(UtilHttp utilHttp, HttpClient httpClient) {
+    private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
+
+    private static Logger logger = LoggerFactory.getLogger(this)
+
+    ClassSearchDAO(HttpClient httpClient, String endpoint) {
         this.httpClient = httpClient
-        this.utilHttp = utilHttp
+        this.baseURI = UriBuilder.fromUri(endpoint).path("/api").build()
     }
 
     private String getResponse(String endpoint, String term = null) {
@@ -53,13 +59,6 @@ class ClassSearchDAO {
         if (statusCode == HttpStatus.SC_OK) {
             logger.info("Successful response from backend data source.")
             EntityUtils.toString(response.entity)
-        } else if (statusCode == HttpStatus.SC_NOT_FOUND) {
-            EntityUtils.consumeQuietly(response.entity)
-
-            String message = "Student not found"
-            logger.info(message)
-
-            throw new StudentNotFoundException(message)
         } else if (statusCode == HttpStatus.SC_BAD_REQUEST) {
             List<String> errorMessages = getBackendErrorMessages(
                     EntityUtils.toString(response.entity))

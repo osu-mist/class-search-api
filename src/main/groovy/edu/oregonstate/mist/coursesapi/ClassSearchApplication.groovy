@@ -24,17 +24,17 @@ class ClassSearchApplication extends Application<ClassSearchConfiguration> {
      * @param environment
      */
     @Override
-    public void run(StudentsConfiguration configuration, Environment environment) {
+    public void run(ClassSearchConfiguration configuration, Environment environment) {
         this.setup(configuration, environment)
 
 
-        HttpStudentsDAO httpStudentsDAO = new HttpStudentsDAO(
+        ClassSearchDAO classSearchDAO = new ClassSearchDAO(
                 getHttpClient(configuration, environment),
                 configuration.httpDataSource.endpoint
         )
 
         environment.jersey().register(new ClassSearchResource(
-                studentsDAOWrapper, configuration.api.endpointUri))
+                classSearchDAO, configuration.api.endpointUri))
 
     }
 
