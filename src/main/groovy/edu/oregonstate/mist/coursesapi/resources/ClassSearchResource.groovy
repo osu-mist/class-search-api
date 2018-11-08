@@ -3,6 +3,7 @@ package edu.oregonstate.mist.coursesapi.resources
 import com.codahale.metrics.annotation.Timed
 import edu.oregonstate.mist.api.Resource
 import edu.oregonstate.mist.api.AuthenticatedUser
+import edu.oregonstate.mist.api.jsonapi.ResourceObject
 import edu.oregonstate.mist.api.jsonapi.ResultObject
 import edu.oregonstate.mist.coursesapi.ClassSearchUriBuilder
 import edu.oregonstate.mist.coursesapi.dao.ClassSearchDAO
@@ -20,14 +21,12 @@ import javax.ws.rs.QueryParam
 import javax.ws.rs.core.Response
 import javax.ws.rs.core.MediaType
 
-@Path('/catalog/')
+@Path('classes')
 @Produces(MediaType.APPLICATION_JSON)
 @PermitAll
 @TypeChecked
 class ClassSearchResource extends Resource {
     Logger logger = LoggerFactory.getLogger(ClassSearchResource.class)
-
-    public static final int TERM_LENGTH = 6
 
     private final ClassSearchDAO classSearchDAO
     private ClassSearchUriBuilder uriBuilder
@@ -37,7 +36,20 @@ class ClassSearchResource extends Resource {
         this.uriBuilder = new ClassSearchUriBuilder(endpointUri)
     }
 
-
+    @GET
+    @Timed
+    @Path('terms')
+    Response getTerms() {
+        ok(new ResultObject(
+                data: classSearchDAO.getTerms().collect {
+                    new ResourceObject(
+                            id: it.code,
+                            type: "terms",
+                            attributes: it
+                    )
+                }
+        )).build()
+    }
 
 //    @GET
 //    @Produces(MediaType.APPLICATION_JSON)

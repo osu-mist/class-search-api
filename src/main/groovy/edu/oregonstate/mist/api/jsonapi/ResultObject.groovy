@@ -20,4 +20,9 @@ class ResultObject {
      * @required
      */
     def data
+
+    /**
+     * Holds information related to pagination in an easy-to-parse object.
+     */
+    MetaObject meta
 }

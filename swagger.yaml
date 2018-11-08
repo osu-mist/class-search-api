@@ -511,7 +511,7 @@ definitions:
         type: integer
         description: Total number of results
         example: 10
-      totalPage:
+      totalPages:
         type: integer
         description: Total number of pagess
         example: 10

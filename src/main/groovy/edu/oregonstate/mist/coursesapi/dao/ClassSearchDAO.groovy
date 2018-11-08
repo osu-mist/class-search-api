@@ -1,5 +1,6 @@
 package edu.oregonstate.mist.coursesapi.dao
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
@@ -7,6 +8,8 @@ import edu.oregonstate.mist.api.jsonapi.ResourceObject
 import edu.oregonstate.mist.coursesapi.core.Attributes
 import edu.oregonstate.mist.coursesapi.core.Faculty
 import edu.oregonstate.mist.coursesapi.core.MeetingTime
+import edu.oregonstate.mist.coursesapi.core.Term
+import groovy.transform.InheritConstructors
 import org.apache.http.HttpEntity
 import org.apache.http.HttpHeaders
 import org.apache.http.HttpResponse
@@ -19,12 +22,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import javax.ws.rs.core.UriBuilder
+import java.time.LocalDate
 
 class ClassSearchDAO {
-    private static final String STATUS_CLOSED = 'Closed'
-    private static final String STATUS_OPEN = 'Open'
-    private static final String STATUS_WAITLISTED = 'Waitlisted'
-
     private HttpClient httpClient
     private final URI baseURI
 
@@ -37,7 +37,16 @@ class ClassSearchDAO {
         this.baseURI = UriBuilder.fromUri(endpoint).path("/api").build()
     }
 
-    private String getResponse(String endpoint, String term = null) {
+    public List<Term> getTerms(String term = null) {
+        BackendResponse termsResponse = getResponse("terms")
+
+        List<BackendTerm> terms = objectMapper.readValue(
+                termsResponse.response, new TypeReference<List<BackendTerm>>() {})
+
+        terms.collect { Term.fromBackendTerm(it) }
+    }
+
+    private BackendResponse getResponse(String endpoint, String term = null) {
         UriBuilder uriBuilder = UriBuilder.fromUri(baseURI)
         uriBuilder.path(endpoint)
 
@@ -58,7 +67,10 @@ class ClassSearchDAO {
 
         if (statusCode == HttpStatus.SC_OK) {
             logger.info("Successful response from backend data source.")
-            EntityUtils.toString(response.entity)
+            new BackendResponse(
+                    response: EntityUtils.toString(response.entity),
+                    total: Integer.parseInt(response.getFirstHeader("X-Total-Count").value)
+            )
         } else if (statusCode == HttpStatus.SC_BAD_REQUEST) {
             List<String> errorMessages = getBackendErrorMessages(
                     EntityUtils.toString(response.entity))
@@ -84,57 +96,23 @@ class ClassSearchDAO {
             throw new Exception(message)
         }
     }
+}
 
-    /**
-     * Calculates the status of a section based on availability and wait count.
-     *
-     * @param it
-     * @return
-     */
-    private static String getStatus(it) {
-        String status = STATUS_CLOSED
-        if (it.status.sectionOpen == STATUS_OPEN) {
-            status = STATUS_OPEN
-        }
-        if (it.waitCount > 0) {
-            status = STATUS_WAITLISTED //@todo: verify logic
-        }
-        status
-    }
+class BackendResponse {
+    String response // plain text response, meant to be deserialized.
+    Integer total // total objects in resource, regardless of the amount in the current response
+}
 
-    /**
-     * Parses out the parameters and adds them to a map if they are not empty
-     *
-     * @param term
-     * @param subject
-     * @param courseNumber
-     * @param q
-     * @param pageNumber
-     * @param pageSize
-     * @return
-     */
-    private LinkedHashMap getQueryMap(String term, String subject, String courseNumber, String q,
-                                      Integer pageNumber, Integer pageSize) {
-        def query = [offset:0]
+@InheritConstructors
+class InvalidTermException extends Exception {}
 
-        if (term) {
-            query['term'] = term.trim()
-        }
-        if (subject) {
-            query['subject'] = subject.trim()
-        }
-        if (courseNumber) {
-            query['courseNumber'] = courseNumber.trim()
-        }
-        if (q) {
-            query['keyword'] = q.trim()
-        }
-        if (pageNumber && pageNumber > 1) {
-            query['offset'] = pageSize * (pageNumber - 1)
-        }
-        if (pageSize) {
-            query['max'] = pageSize
-        }
-        query
-    }
+@JsonIgnoreProperties(ignoreUnknown = true)
+class BackendTerm {
+    String code
+    String description
+    LocalDate startDate
+    LocalDate endDate
+    String financialAidProcessingYear
+    LocalDate housingStartDate
+    LocalDate housingEndDate
 }
