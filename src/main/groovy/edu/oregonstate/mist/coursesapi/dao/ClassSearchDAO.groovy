@@ -5,6 +5,8 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import edu.oregonstate.mist.api.jsonapi.MetaObject
+import edu.oregonstate.mist.coursesapi.core.Subject
+import edu.oregonstate.mist.coursesapi.core.Subjects
 import edu.oregonstate.mist.coursesapi.core.Term
 import edu.oregonstate.mist.coursesapi.core.Terms
 import groovy.transform.InheritConstructors
@@ -30,6 +32,7 @@ class ClassSearchDAO {
     private static Logger logger = LoggerFactory.getLogger(this)
 
     private static final String termsEndpoint = "terms"
+    private static final String subjectsEndpoint = "subjects"
 
     ClassSearchDAO(HttpClient httpClient, String endpoint) {
         this.httpClient = httpClient
@@ -50,6 +53,23 @@ class ClassSearchDAO {
         BackendResponse termResponse = getResponse("$termsEndpoint/$termCode", null, null)
         BackendTerm term = objectMapper.readValue(termResponse.response, BackendTerm.class)
         Term.fromBackendTerm(term)
+    }
+
+    public Subjects getSubjects(Integer pageSize, Integer pageNumber) {
+        BackendResponse subjectsResponse = getResponse(subjectsEndpoint, pageSize, pageNumber)
+        List<BackendSubject> subjects = objectMapper.readValue(
+                subjectsResponse.response, new TypeReference<List<BackendSubject>>() {})
+        new Subjects(
+                subjects: subjects.collect { Subject.fromBackendSubject(it) },
+                metaObject: getMetaObject(subjectsResponse.total, pageSize, pageNumber)
+        )
+    }
+
+    public Subject getSubjectById(String subjectId) {
+        BackendResponse subjectResponse = getResponse("$subjectsEndpoint/$subjectId", null, null)
+        BackendSubject subject = objectMapper.readValue(
+                subjectResponse.response, BackendSubject.class)
+        Subject.fromBackendSubject(subject)
     }
 
     private static MetaObject getMetaObject(Integer total, Integer pageSize, Integer pageNumber) {
@@ -163,4 +183,11 @@ class BackendTerm {
     String financialAidProcessingYear
     LocalDate housingStartDate
     LocalDate housingEndDate
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+class BackendSubject {
+    String id
+    String abbreviation
+    String title
 }

@@ -5,7 +5,8 @@ import edu.oregonstate.mist.api.Resource
 import edu.oregonstate.mist.api.jsonapi.MetaObject
 import edu.oregonstate.mist.api.jsonapi.ResourceObject
 import edu.oregonstate.mist.api.jsonapi.ResultObject
-
+import edu.oregonstate.mist.coursesapi.core.Subject
+import edu.oregonstate.mist.coursesapi.core.Subjects
 import edu.oregonstate.mist.coursesapi.core.Term
 import edu.oregonstate.mist.coursesapi.core.Terms
 import edu.oregonstate.mist.coursesapi.dao.ClassSearchDAO
@@ -34,6 +35,7 @@ class ClassSearchResource extends Resource {
 
     private String baseEndpoint = "classes"
     private String termsEndpoint = "$baseEndpoint/terms"
+    private String subjectsEndpoint = "$baseEndpoint/subjects"
 
     ClassSearchResource(ClassSearchDAO classSearchDAO, URI endpointUri) {
         this.classSearchDAO = classSearchDAO
@@ -47,7 +49,7 @@ class ClassSearchResource extends Resource {
         Terms termsResponse = classSearchDAO.getTerms(getPageSize(), getPageNumber())
         ok(new ResultObject(
                 links: getPaginationLinks([:], termsResponse.metaObject, termsEndpoint),
-                data: termsResponse.terms.collect { getTermResourceObject(it) },
+                data: termsResponse.terms.collect { getResourceObject(it) },
                 meta: termsResponse.metaObject
         )).build()
     }
@@ -65,11 +67,40 @@ class ClassSearchResource extends Resource {
         }
 
         ok(new ResultObject(
-                data: getTermResourceObject(term)
+                data: getResourceObject(term)
         )).build()
     }
 
-    private ResourceObject getTermResourceObject(Term term) {
+    @GET
+    @Timed
+    @Path('subjects')
+    Response getSubjects() {
+        Subjects subjectsResponse = classSearchDAO.getSubjects(getPageSize(), getPageNumber())
+        ok(new ResultObject(
+                links: getPaginationLinks([:], subjectsResponse.metaObject, subjectsEndpoint),
+                data: subjectsResponse.subjects.collect { getResourceObject(it) },
+                meta: subjectsResponse.metaObject
+        )).build()
+    }
+
+    @GET
+    @Timed
+    @Path('subjects/{subjectId: [0-9a-zA-Z-]+}')
+    Response getSubjectById(@PathParam('subjectId') String subjectId) {
+        Subject subject
+
+        try {
+            subject = classSearchDAO.getSubjectById(subjectId)
+        } catch (ClassSearchDAONotFoundException e) {
+            return notFound("Subject ID not found.").build()
+        }
+
+        ok(new ResultObject(
+                data: getResourceObject(subject)
+        )).build()
+    }
+
+    private ResourceObject getResourceObject(Term term) {
         String id = term.code
         new ResourceObject(
                 id: id,
@@ -79,11 +110,14 @@ class ClassSearchResource extends Resource {
         )
     }
 
-    @GET
-    @Timed
-    @Path('subjects')
-    Response getSubjects() {
-
+    private ResourceObject getResourceObject(Subject subject) {
+        String id = subject.id
+        new ResourceObject(
+                id: id,
+                type: "subjects",
+                attributes: subject,
+                links: getSelfLink("$subjectsEndpoint/$id")
+        )
     }
 
     private Map<String,String> getPaginationLinks(Map<String, String> params,
