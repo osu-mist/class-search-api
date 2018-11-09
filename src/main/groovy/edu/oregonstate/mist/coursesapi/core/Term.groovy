@@ -1,7 +1,6 @@
 package edu.oregonstate.mist.coursesapi.core
 
 import com.fasterxml.jackson.annotation.JsonFormat
-import com.fasterxml.jackson.annotation.JsonIgnore
 import edu.oregonstate.mist.api.jsonapi.MetaObject
 import edu.oregonstate.mist.coursesapi.dao.BackendTerm
 
@@ -37,7 +36,5 @@ class Term {
 
 class Terms {
     List<Term> terms
-
-    @JsonIgnore
     MetaObject metaObject
 }

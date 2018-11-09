@@ -33,7 +33,7 @@ abstract class Resource {
     /**
      * URI used to provide jsonapi pagination links.
      */
-    private URI endpointUri
+    protected URI endpointUri
 
     /**
      * Set the base URI used to provide JSON-API pagination links.

@@ -4,18 +4,15 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import edu.oregonstate.mist.api.jsonapi.ResourceObject
-import edu.oregonstate.mist.coursesapi.core.Attributes
-import edu.oregonstate.mist.coursesapi.core.Faculty
-import edu.oregonstate.mist.coursesapi.core.MeetingTime
+import edu.oregonstate.mist.api.jsonapi.MetaObject
 import edu.oregonstate.mist.coursesapi.core.Term
+import edu.oregonstate.mist.coursesapi.core.Terms
 import groovy.transform.InheritConstructors
-import org.apache.http.HttpEntity
+import org.apache.http.Header
 import org.apache.http.HttpHeaders
 import org.apache.http.HttpResponse
 import org.apache.http.HttpStatus
 import org.apache.http.client.HttpClient
-import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.util.EntityUtils
 import org.slf4j.Logger
@@ -32,26 +29,54 @@ class ClassSearchDAO {
 
     private static Logger logger = LoggerFactory.getLogger(this)
 
+    private static final String termsEndpoint = "terms"
+
     ClassSearchDAO(HttpClient httpClient, String endpoint) {
         this.httpClient = httpClient
         this.baseURI = UriBuilder.fromUri(endpoint).path("/api").build()
     }
 
-    public List<Term> getTerms(String term = null) {
-        BackendResponse termsResponse = getResponse("terms")
-
+    public Terms getTerms(Integer pageSize, Integer pageNumber) {
+        BackendResponse termsResponse = getResponse(termsEndpoint, pageSize, pageNumber)
         List<BackendTerm> terms = objectMapper.readValue(
                 termsResponse.response, new TypeReference<List<BackendTerm>>() {})
-
-        terms.collect { Term.fromBackendTerm(it) }
+        new Terms(
+                terms: terms.collect { Term.fromBackendTerm(it) },
+                metaObject: getMetaObject(termsResponse.total, pageSize, pageNumber)
+        )
     }
 
-    private BackendResponse getResponse(String endpoint, String term = null) {
+    public Term getTermByTermCode(String termCode) {
+        BackendResponse termResponse = getResponse("$termsEndpoint/$termCode", null, null)
+        BackendTerm term = objectMapper.readValue(termResponse.response, BackendTerm.class)
+        Term.fromBackendTerm(term)
+    }
+
+    private static MetaObject getMetaObject(Integer total, Integer pageSize, Integer pageNumber) {
+        new MetaObject(
+                totalResults: total,
+                totalPages: Math.ceil(total / pageSize),
+                currentPageNumber: pageNumber,
+                currentPageSize: pageSize
+        )
+    }
+
+    private BackendResponse getResponse(String endpoint,
+                                        Integer pageSize,
+                                        Integer pageNumber,
+                                        String term = null) {
         UriBuilder uriBuilder = UriBuilder.fromUri(baseURI)
         uriBuilder.path(endpoint)
 
         if (term) {
             uriBuilder.queryParam("term", term)
+        }
+
+        if (pageNumber && pageSize) {
+            // max == maximum results in a response
+            uriBuilder.queryParam("max", pageSize)
+            // the first result should be offset objects from the first object
+            uriBuilder.queryParam("offset", (pageNumber - 1) * pageSize)
         }
 
         URI requestURI = uriBuilder.build()
@@ -67,10 +92,14 @@ class ClassSearchDAO {
 
         if (statusCode == HttpStatus.SC_OK) {
             logger.info("Successful response from backend data source.")
+            Header totalHeader = response.getFirstHeader("X-Total-Count")
             new BackendResponse(
                     response: EntityUtils.toString(response.entity),
-                    total: Integer.parseInt(response.getFirstHeader("X-Total-Count").value)
+                    total: totalHeader ? Integer.parseInt(
+                            response.getFirstHeader("X-Total-Count").value) : null
             )
+        } else if (statusCode == HttpStatus.SC_NOT_FOUND) {
+            throw new ClassSearchDAONotFoundException()
         } else if (statusCode == HttpStatus.SC_BAD_REQUEST) {
             List<String> errorMessages = getBackendErrorMessages(
                     EntityUtils.toString(response.entity))
@@ -96,6 +125,15 @@ class ClassSearchDAO {
             throw new Exception(message)
         }
     }
+
+    private List<String> getBackendErrorMessages(String errorResponse) {
+        def unmappedErrors = objectMapper.readValue(errorResponse, new TypeReference<HashMap>() {})
+
+        List<BackendError> errors = objectMapper.convertValue(unmappedErrors["errors"],
+                new TypeReference<List<BackendError>>() {})
+
+        errors.collect { it.message }
+    }
 }
 
 class BackendResponse {
@@ -105,6 +143,16 @@ class BackendResponse {
 
 @InheritConstructors
 class InvalidTermException extends Exception {}
+
+@InheritConstructors
+class ClassSearchDAONotFoundException extends Exception {}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+class BackendError {
+    String code
+    String message
+    String description
+}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 class BackendTerm {
