@@ -191,3 +191,8 @@ class BackendSubject {
     String abbreviation
     String title
 }
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+class BackendClass {
+
+}
