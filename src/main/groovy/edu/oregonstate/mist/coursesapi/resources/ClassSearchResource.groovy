@@ -1,6 +1,7 @@
 package edu.oregonstate.mist.coursesapi.resources
 
 import com.codahale.metrics.annotation.Timed
+import edu.oregonstate.mist.api.Error
 import edu.oregonstate.mist.api.Resource
 import edu.oregonstate.mist.api.jsonapi.MetaObject
 import edu.oregonstate.mist.api.jsonapi.ResourceObject
@@ -108,7 +109,7 @@ class ClassSearchResource extends Resource {
                         @QueryParam('subject') String subject,
                         @QueryParam('courseNumber') String courseNumber,
                         @QueryParam('q') String q) {
-
+        Response.status(Response.Status.NOT_IMPLEMENTED).build()
     }
 
     private ResourceObject getResourceObject(Term term) {

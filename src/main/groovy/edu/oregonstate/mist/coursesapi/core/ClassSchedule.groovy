@@ -2,6 +2,9 @@ package edu.oregonstate.mist.coursesapi.core
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import edu.oregonstate.mist.api.jsonapi.MetaObject
+import edu.oregonstate.mist.coursesapi.dao.BackendClassSchedule
+import edu.oregonstate.mist.coursesapi.dao.BackendFaculty
+import edu.oregonstate.mist.coursesapi.dao.BackendMeetingTime
 
 import java.time.LocalDate
 import java.time.LocalTime
@@ -24,7 +27,29 @@ class ClassSchedule {
     Integer waitlistCapacity
     Integer waitlistCount
     List<Faculty> faculty
+    List<MeetingTime> meetingTimes
 
+    static fromBackendClassSchedule(BackendClassSchedule backendClassSchedule) {
+        backendClassSchedule.with {
+            new ClassSchedule(
+                    academicYear: academicYear,
+                    academicYearDescription: academicYearDescription,
+                    courseReferenceNumber: courseReferenceNumber,
+                    courseSubject: subject,
+                    courseSubjectDescription: subjectDescription,
+                    courseNumber: courseNumber,
+                    courseTitle: courseTitle,
+                    sectionNumber: sequenceNumber,
+                    term: term,
+                    termDescription: termDescription,
+                    scheduleDescription: scheduleDescription,
+                    scheduleType: scheduleType,
+                    creditHours: creditHour,
+                    faculty: faculty.collect { Faculty.fromBackendFaculty(it) },
+                    meetingTimes: meetingTimes.collect { MeetingTime.fromBackendMeetingTime(it) }
+            )
+        }
+    }
 }
 
 class ClassSchedules {
@@ -37,6 +62,17 @@ class Faculty {
     String name
     String email
     Boolean primary
+
+    static fromBackendFaculty(BackendFaculty backendFaculty) {
+        backendFaculty.with {
+            new Faculty(
+                    osuID: bannerId,
+                    name: displayName,
+                    email: emailAddress,
+                    primary: primaryIndicator
+            )
+        }
+    }
 }
 
 class MeetingTime {

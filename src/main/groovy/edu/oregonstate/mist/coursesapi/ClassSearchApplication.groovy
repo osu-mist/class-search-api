@@ -2,6 +2,7 @@ package edu.oregonstate.mist.coursesapi
 
 import edu.oregonstate.mist.api.Application
 import edu.oregonstate.mist.coursesapi.dao.ClassSearchDAO
+import edu.oregonstate.mist.coursesapi.health.BackendHealth
 import edu.oregonstate.mist.coursesapi.resources.ClassSearchResource
 import io.dropwizard.client.HttpClientBuilder
 import io.dropwizard.setup.Environment
@@ -29,6 +30,8 @@ class ClassSearchApplication extends Application<ClassSearchConfiguration> {
                 getHttpClient(configuration, environment),
                 configuration.httpDataSource.endpoint
         )
+
+        environment.healthChecks().register("ClassSearchDAO", new BackendHealth(classSearchDAO))
 
         environment.jersey().register(new ClassSearchResource(
                 classSearchDAO, configuration.api.endpointUri))

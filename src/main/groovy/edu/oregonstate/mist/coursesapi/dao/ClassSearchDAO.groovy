@@ -1,6 +1,8 @@
 package edu.oregonstate.mist.coursesapi.dao
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
@@ -22,6 +24,8 @@ import org.slf4j.LoggerFactory
 
 import javax.ws.rs.core.UriBuilder
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 class ClassSearchDAO {
     private HttpClient httpClient
@@ -70,6 +74,15 @@ class ClassSearchDAO {
         BackendSubject subject = objectMapper.readValue(
                 subjectResponse.response, BackendSubject.class)
         Subject.fromBackendSubject(subject)
+    }
+
+    public String status() {
+        BackendResponse healthCheckResponse = getResponse("healthcheck", null, null)
+
+        def unmappedErrors = objectMapper.readValue(healthCheckResponse.response,
+                new TypeReference<List<HashMap>>() {})
+
+        unmappedErrors[0]['status']
     }
 
     private static MetaObject getMetaObject(Integer total, Integer pageSize, Integer pageNumber) {
@@ -193,6 +206,68 @@ class BackendSubject {
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-class BackendClass {
+class BackendClassSchedule {
+    String academicYear
+    String academicYearDescription
+    String courseReferenceNumber
+    String subject
+    String subjectDescription
+    String courseNumber
+    String courseTitle
+    String sequenceNumber
+    String term
+    String termDescription
+    String scheduleDescription
+    String scheduleType
+    Integer creditHour
+    String gradingModeDescription
+    List<BackendFaculty> faculty
+    List<BackendMeetingTime> meetingTimes
+}
 
+@JsonIgnoreProperties(ignoreUnknown = true)
+class BackendFaculty {
+    String bannerId
+    String displayName
+    String emailAddress
+    Boolean primaryIndicator
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+class BackendMeetingTime {
+    LocalDate startDate
+    LocalDate endDate
+
+    private static DateTimeFormatter backendTimeFormat = DateTimeFormatter.ofPattern("HHmm")
+
+    @JsonIgnore
+    LocalTime beginTime
+
+    @JsonProperty("beginTime")
+    private void setBeginTime(String beginTime) {
+        this.beginTime = LocalTime.parse(beginTime, backendTimeFormat)
+    }
+
+    @JsonIgnore
+    LocalTime endTime
+
+    @JsonProperty("endTime")
+    private void setEndTime(String endTime) {
+        this.endTime = LocalTime.parse(endTime, backendTimeFormat)
+    }
+
+    String room
+    String building
+    String buildingDescription
+    String campusDescription
+    BigDecimal hoursWeek
+    Integer creditHourSession
+    String meetingScheduleType
+    Boolean sunday
+    Boolean monday
+    Boolean tuesday
+    Boolean wednesday
+    Boolean thursday
+    Boolean friday
+    Boolean saturday
 }
