@@ -1,59 +1,21 @@
 package edu.oregonstate.mist.coursesapi
 
-import de.thomaskrille.dropwizard_template_config.TemplateConfigBundle
-import edu.oregonstate.mist.api.BuildInfoManager
-import edu.oregonstate.mist.api.Configuration
-import edu.oregonstate.mist.api.PrettyPrintResponseFilter
-import edu.oregonstate.mist.api.Resource
-import edu.oregonstate.mist.api.InfoResource
-import edu.oregonstate.mist.api.AuthenticatedUser
-import edu.oregonstate.mist.api.BasicAuthenticator
-import edu.oregonstate.mist.api.jsonapi.GenericExceptionMapper
-import edu.oregonstate.mist.api.jsonapi.NotFoundExceptionMapper
+import edu.oregonstate.mist.api.Application
 import edu.oregonstate.mist.coursesapi.dao.ClassSearchDAO
-import edu.oregonstate.mist.coursesapi.dao.UtilHttp
 import edu.oregonstate.mist.coursesapi.health.BackendHealth
 import edu.oregonstate.mist.coursesapi.resources.ClassSearchResource
-import io.dropwizard.Application
-import io.dropwizard.auth.AuthDynamicFeature
-import io.dropwizard.auth.AuthValueFactoryProvider
-import io.dropwizard.auth.basic.BasicCredentialAuthFilter
 import io.dropwizard.client.HttpClientBuilder
-import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
+import org.apache.http.auth.AuthScope
+import org.apache.http.auth.UsernamePasswordCredentials
+import org.apache.http.client.CredentialsProvider
 import org.apache.http.client.HttpClient
+import org.apache.http.impl.client.BasicCredentialsProvider
 
 /**
  * Main application class.
  */
 class ClassSearchApplication extends Application<ClassSearchConfiguration> {
-    /**
-     * Initializes application bootstrap.
-     *
-     * @param bootstrap
-     */
-    @Override
-    public void initialize(Bootstrap<Configuration> bootstrap) {
-        bootstrap.addBundle(new TemplateConfigBundle())
-    }
-
-    /**
-     * Registers lifecycle managers and Jersey exception mappers
-     * and container response filters
-     *
-     * @param environment
-     * @param buildInfoManager
-     */
-    protected void registerAppManagerLogic(Environment environment,
-                                           BuildInfoManager buildInfoManager) {
-
-        environment.lifecycle().manage(buildInfoManager)
-
-        environment.jersey().register(new NotFoundExceptionMapper())
-        environment.jersey().register(new GenericExceptionMapper())
-        environment.jersey().register(new PrettyPrintResponseFilter())
-    }
-
     /**
      * Parses command-line arguments and runs the application.
      *
@@ -62,39 +24,37 @@ class ClassSearchApplication extends Application<ClassSearchConfiguration> {
      */
     @Override
     public void run(ClassSearchConfiguration configuration, Environment environment) {
-        Resource.loadProperties()
-        BuildInfoManager buildInfoManager = new BuildInfoManager()
+        this.setup(configuration, environment)
 
-        // the httpclient from DW provides with many metrics and config options
-        HttpClient httpClient = new HttpClientBuilder(environment)
-                .using(configuration.getHttpClientConfiguration())
-                .build("backend-http-client")
+        ClassSearchDAO classSearchDAO = new ClassSearchDAO(
+                getHttpClient(configuration, environment),
+                configuration.httpDataSource.endpoint
+        )
 
-        // reusable UtilHttp instance for both DAO and healthcheck
-        UtilHttp utilHttp = new UtilHttp(configuration.classSearch)
+        environment.healthChecks().register("ClassSearchDAO", new BackendHealth(classSearchDAO))
 
-        // setup dao
-        ClassSearchDAO classSearchDAO = new ClassSearchDAO(utilHttp, httpClient)
+        environment.jersey().register(new ClassSearchResource(
+                classSearchDAO, configuration.api.endpointUri))
 
-        def classSearchResource = new ClassSearchResource(classSearchDAO)
-        classSearchResource.setEndpointUri(configuration.getApi().getEndpointUri())
-        environment.jersey().register(classSearchResource)
+    }
 
-        registerAppManagerLogic(environment, buildInfoManager)
+    HttpClient getHttpClient(ClassSearchConfiguration configuration, Environment environment) {
+        def httpClientBuilder = new HttpClientBuilder(environment)
 
-        environment.jersey().register(new InfoResource(buildInfoManager.getInfo()))
-        environment.jersey().register(new AuthDynamicFeature(
-                new BasicCredentialAuthFilter.Builder<AuthenticatedUser>()
-                       .setAuthenticator(new BasicAuthenticator(configuration.getCredentialsList()))
-                       .setRealm('SkeletonApplication')
-                       .buildAuthFilter()
-        ))
-        environment.jersey().register(new AuthValueFactoryProvider.Binder
-                <AuthenticatedUser>(AuthenticatedUser.class))
+        if (configuration.httpClient != null) {
+            httpClientBuilder.using(configuration.httpClient)
+        }
 
-        // healthchecks
-        environment.healthChecks().register("backend",
-                new BackendHealth(utilHttp, httpClient))
+        CredentialsProvider provider = new BasicCredentialsProvider()
+        UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(
+                configuration.httpDataSource.username,
+                configuration.httpDataSource.password
+        )
+        provider.setCredentials(AuthScope.ANY, credentials)
+
+        httpClientBuilder.using(provider)
+
+        httpClientBuilder.build("backend-http-client")
     }
 
     /**

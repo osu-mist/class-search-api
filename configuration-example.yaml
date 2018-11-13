@@ -3,7 +3,7 @@
 ## Do not commit changes that contain credentials or sensitive data!
 
 server:
-  rootPath: /api/v0/*
+  rootPath: /api/v1/*
   applicationConnectors:
     - type: https
       port: 8080
@@ -43,11 +43,25 @@ authentication:
   - username: username
     password: password
 
-api:
-  endpointUri: https://api.oregonstate.edu/v1/catalog/courses/
+httpDataSource:
+  endpoint: https://example.com
+  username: secret
+  password: sauce
 
-courses:
-  backendHost: https://api.oregonstate.edu
-  backendPath: /class-search
-  backendUsername: beaver
-  backendPassword: believer
+httpClient:
+  # The socket timeout value. If a read or write to the underlying
+  # TCP/IP connection hasn't succeeded after this duration, a
+  # timeout exception is thrown.
+  timeout: 60000ms
+
+  # The connection timeout value. If a TCP/IP connection cannot be
+  # established in this time, a timeout exception is thrown.
+  connectionTimeout: 60000ms
+
+  timeToLive: 1h
+  cookiesEnabled: false
+  maxConnections: 1024
+  maxConnectionsPerRoute: 1024
+  keepAlive: 0ms
+  retries: 0
+  userAgent: class-search-api

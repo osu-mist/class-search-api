@@ -9,49 +9,59 @@ Current implementations of the Dropwizard and JDK.
 * [Dropwizard 1.0.2](http://www.dropwizard.io/1.0.2/docs/)
 * [JDK 8](https://jdk8.java.net/)
 
-### Generate Keys
+## Generate Keys
 
-HTTPS is required for Web APIs in development and production. Use `keytool(1)` to generate public and private keys.
+HTTPS is required for Web APIs in development and production. Use keytool(1) to generate public and private keys.
 
 Generate key pair and keystore:
 
-    $ keytool \
-        -genkeypair \
-        -dname "CN=Jane Doe, OU=Enterprise Computing Services, O=Oregon State University, L=Corvallis, S=Oregon, C=US" \
-        -ext "san=dns:localhost,ip:127.0.0.1" \
-        -alias doej \
-        -keyalg RSA \
-        -keysize 2048 \
-        -sigalg SHA256withRSA \
-        -validity 365 \
-        -keystore doej.keystore
+```
+$ keytool \
+  -genkeypair \
+  -dname "CN=Jane Doe, OU=Enterprise Computing Services, O=Oregon State University, L=Corvallis, S=Oregon, C=US" \
+  -ext "san=dns:localhost,ip:127.0.0.1" \
+  -alias doej \
+  -keyalg RSA \
+  -keysize 2048 \
+  -sigalg SHA256withRSA \
+  -validity 365 \
+  -keystore doej.keystore
+```
 
 Export certificate to file:
 
-    $ keytool \
-        -exportcert \
-        -rfc \
-        -alias "doej" \
-        -keystore doej.keystore \
-        -file doej.pem
+```
+$ keytool \
+  -exportcert \
+  -rfc \
+  -alias "doej" \
+  -keystore doej.keystore \
+  -file doej.pem
+```
 
 Import certificate into truststore:
 
-    $ keytool \
-        -importcert \
-        -alias "doej" \
-        -file doej.pem \
-        -keystore doej.truststore
+```
+$ keytool \
+  -importcert \
+  -alias "doej" \
+  -file doej.pem \
+  -keystore doej.truststore
+```
 
 ## Gradle
 
 This project uses the build automation tool Gradle. Use the [Gradle Wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html) to download and install it automatically:
 
-    $ ./gradlew
+```
+$ ./gradlew
+```
 
 The Gradle wrapper installs Gradle in the directory `~/.gradle`. To add it to your `$PATH`, add the following line to `~/.bashrc`:
 
-    $ export PATH=$PATH:/home/user/.gradle/wrapper/dists/gradle-2.4-all/WRAPPER_GENERATED_HASH/gradle-2.4/bin
+```
+$ export PATH=$PATH:/home/user/.gradle/wrapper/dists/gradle-2.4-all/WRAPPER_GENERATED_HASH/gradle-2.4/bin
+```
 
 The changes will take effect once you restart the terminal or `source ~/.bashrc`.
 
@@ -59,17 +69,21 @@ The changes will take effect once you restart the terminal or `source ~/.bashrc`
 
 List all tasks runnable from root project:
 
-    $ gradle tasks
+```
+$ gradle tasks
+```
 
-### IntelliJ IDEA
+## IntelliJ IDEA
 
 Generate IntelliJ IDEA project:
 
-    $ gradle idea
+```
+$ gradle idea
+```
 
 Open with `File` -> `Open Project`.
 
-### Configure
+## Configure
 
 Copy [configuration-example.yaml](configuration-example.yaml) to `configuration.yaml`. Modify as necessary, being careful to avoid committing sensitive data.
 
@@ -77,49 +91,67 @@ Copy [configuration-example.yaml](configuration-example.yaml) to `configuration.
 
 Build the project:
 
-    $ gradle build
+```
+$ gradle build
+```
 
 JARs [will be saved](https://github.com/johnrengelman/shadow#using-the-default-plugin-task) into the directory `build/libs/`.
 
-### Run
+## Run
 
 Run the project:
 
-    $ gradle run
+```
+$ gradle run
+```
 
 ## Contrib Files
 
 Any code that contains intellectual property from a vendor should be stored in Github Enterprise instead of public Github. Make the name of the contrib repo in Github Enterprise follow this format using archivesBaseName in gradle.properties.
 
-    archivesBaseName-contrib
+```
+archivesBaseName-contrib
+```
 
 Set the value of getContribFiles to yes in gradle.properties.
 
-    getContribFiles=yes
+```
+getContribFiles=yes
+```
 
 Also set the value of contribCommit to the SHA1 of the desired commit to be used from the contrib repository.
 
-    contribCommit={SHA1}
-    
+```
+contribCommit={SHA1}
+```
+
 Files in a Github Enterprise repo will be copied to this directory upon building the application.
 
-    gradle build
+```
+$ gradle build
+```
 
 Contrib files are copied to:
 
-    /src/main/groovy/edu/oregonstate/mist/contrib/
-    
+```
+/src/main/groovy/edu/oregonstate/mist/contrib/
+```
+
 ## Base a New Project off the Skeleton
 
 Clone the skeleton:
 
-    $ git clone --origin skeleton git@github.com:osu-mist/web-api-skeleton.git my-api
-    $ cd my-api
+```
+$ git clone --origin skeleton git@github.com:osu-mist/web-api-skeleton.git my-api
+$ cd my-api
+```
 
 Rename the webapiskeleton package and SkeletonApplication class:
 
-    $ git mv src/main/groovy/edu/oregonstate/mist/webapiskeleton src/main/groovy/edu/oregonstate/mist/myapi
-    $ vim src/main/groovy/edu/oregonstate/mist/myapi/SkeletonApplication.class
+```
+$ git mv src/main/groovy/edu/oregonstate/mist/webapiskeleton src/main/groovy/edu/oregonstate/mist/myapi
+$ vim src/main/groovy/edu/oregonstate/mist/myapi/SkeletonApplication.class
+```
 
 Update gradle.properties with your package name and main class.
 
@@ -133,31 +165,37 @@ Update the resource examples at the end of this readme.
 
 Add the skeleton as a remote:
 
-    $ git remote add skeleton git@github.com:osu-mist/web-api-skeleton.git
-    $ git fetch skeleton
+```
+$ git remote add skeleton git@github.com:osu-mist/web-api-skeleton.git
+$ git fetch skeleton
+```
 
 Merge the skeleton into your codebase:
 
-    $ git checkout feature/abc-123-branch
-    $ git merge skeleton/master
-    ...
-    $ git commit -v
-
+```
+$ git checkout feature/abc-123-branch
+$ git merge skeleton/master
+...
+$ git commit -v
+```
 
 ## Incorporate Updates from the Skeleton
 
 Fetch updates from the skeleton:
 
-    $ git fetch skeleton
+```
+$ git fetch skeleton
+```
 
 Merge the updates into your codebase as before.
 Note that changes to CodeNarc configuration may introduce build failures.
 
-    $ git checkout feature/abc-124-branch
-    $ git merge skeleton/master
-    ...
-    $ git commit -v
-
+```
+$ git checkout feature/abc-124-branch
+$ git merge skeleton/master
+...
+$ git commit -v
+```
 
 ## Resources
 
@@ -256,16 +294,11 @@ This resource returns an array of objects representing the courses matching the 
 
 Courses matches term, course number, subject and query. An empty array is returned if no courses match:
     $ curl \
-      --insecure \
-      --user "username:password" \
-      'https://localhost:8080/api/v1/courses/?term=201708&subject=XX'
-    {"links":null,"data":[]}
+    > --cacert doej.pem \
+    > --user "username:password" \
+    > https://localhost:8080/api/v1/
+    {"name":"web-api-skeleton","time":"2016-08-02 14:37:01-0700","unixTime":1470173821035,"commit":"e3d396e","documentation":"swagger.yaml"}
 
-An error is returned if the request is invalid:
-
-    $ curl \
-      --insecure \
-      --user "username:password" \
-      'https://localhost:8080/api/v1/courses/?term=xx'
-    {"status":400,"developerMessage":"term should be a 6 digit code","userMessage":"Bad Request - the application submitted invalid data. Please try again.","code":1400,"details":"https://developer.oregonstate.edu/documentation/error-reference#1400"}
-
+NOTE: you should only specify a certificate with --cacert for local testing.
+Production servers should use a real certificate
+issued by a valid certificate authority.

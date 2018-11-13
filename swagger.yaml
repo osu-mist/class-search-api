@@ -1,19 +1,26 @@
 swagger: '2.0'
-
 info:
+  title: Classes API
+  description: Get class information for OSU.
   version: "1.0.0"
-  title: Class Search API
-
+  license:
+    name: GNU Affero General Public License Version 3
+    url: http://www.gnu.org/licenses/agpl-3.0.en.html
+externalDocs:
+  description: GitHub Repository
+  url: https://github.com/osu-mist/class-search-api
+schemes:
+  - https
+host: api.oregonstate.edu
+basePath: /v1
+produces:
+  - application/json
 paths:
-  /courses:
+  /classes/class-search:
     get:
       tags:
-       - classes
-       - search
+        - class-search
       description: "Searches for the classes available for registration given a term code, subject and course number."
-      operationId: getClasses
-      produces:
-        - application/json
       parameters:
         - in: query
           name: term
@@ -22,7 +29,7 @@ paths:
           type: string
         - in: query
           name: subject
-          description: "This is a two to four letter course subject. To find a list of appropriate subjects, you can query: `/course-subjects` and use the `abbreviation` value."
+          description: "This is a two to four letter course subject. To find a list of appropriate subjects, you can query: `/subjects` and use the `abbreviation` value."
           required: false
           type: string
         - in: query
@@ -35,25 +42,58 @@ paths:
           description: "Searches class title, description, and subject"
           required: false
           type: string
-        - in: query
-          name: page[size]
-          description: "Number of results to return. Used in pagination. Default value is 10."
-          required: false
-          type: string
-        - in: query
-          name: page[number]
-          description: "Page number of results. Used to paginate through results."
-          required: false
-          type: string
-      summary: Get information
-      description: Build and runtime information about the application.
+        - $ref: '#/parameters/pageSize'
+        - $ref: '#/parameters/pageNumber'
+        - $ref: '#/parameters/pretty'
+        - $ref: '#/parameters/authorization'
+      responses:
+        "200":
+          description: "Successful response"
+          schema:
+            $ref: "#/definitions/CoursesResultObject"
+        "400":
+          description: "Bad request"
+          schema:
+            $ref: "#/definitions/Error"
+        "500":
+          description: "Internal Server Error"
+          schema:
+            $ref: "#/definitions/Error"
+  /classes/subjects:
+    get:
+      tags:
+        - subjects
+      description: "Get all course subjects."
       parameters:
+        - $ref: '#/parameters/pageSize'
+        - $ref: '#/parameters/pageNumber'
         - $ref: '#/parameters/pretty'
       responses:
         "200":
           description: "Successful response"
           schema:
-            $ref: "#/definitions/ResultObjects"
+            $ref: "#/definitions/SubjectsResultObject"
+        "500":
+          description: "Internal Server Error"
+          schema:
+            $ref: "#/definitions/Error"
+  /classes/subjects/{id}:
+    get:
+      tags:
+        - subjects
+      description: "Get a subject by ID."
+      parameters:
+        - in: path
+          name: id
+          type: string
+          description: "ID of subject."
+          required: true
+        - $ref: '#/parameters/pretty'
+      responses:
+        "200":
+          description: "Successful response"
+          schema:
+            $ref: "#/definitions/SubjectResultObject"
         "404":
           description: "Not Found"
           schema:
@@ -62,209 +102,448 @@ paths:
           description: "Internal Server Error"
           schema:
             $ref: "#/definitions/Error"
-
+  /classes/terms:
+    get:
+      tags:
+        - terms
+      description: "Get all academic terms."
+      parameters:
+        - $ref: '#/parameters/pageSize'
+        - $ref: '#/parameters/pageNumber'
+        - $ref: '#/parameters/pretty'
+      responses:
+        "200":
+          description: "Successful response"
+          schema:
+            $ref: "#/definitions/TermsResultObject"
+        "500":
+          description: "Internal Server Error"
+          schema:
+            $ref: "#/definitions/Error"
+  /classes/terms/{termCode}:
+    get:
+      tags:
+        - terms
+      description: "Get a subject by ID."
+      parameters:
+        - in: path
+          name: termCode
+          type: string
+          description: "Term code."
+          required: true
+        - $ref: '#/parameters/pretty'
+      responses:
+        "200":
+          description: "Successful response"
+          schema:
+            $ref: "#/definitions/TermResultObject"
+        "404":
+          description: "Not Found"
+          schema:
+            $ref: "#/definitions/Error"
+        "500":
+          description: "Internal Server Error"
+          schema:
+            $ref: "#/definitions/Error"
 parameters:
+  authorization:
+    name: Authorization
+    in: header
+    type: string
+    required: true
+    description: '"Bearer [token]" where [token] is your OAuth2 access token'
   pretty:
     name: pretty
     in: query
     type: boolean
     required: false
     description: If true, JSON response will be pretty-printed
+  pageSize:
+    in: query
+    name: page[size]
+    description: "Number of results to return. Used in pagination. Default value is 10."
+    required: false
+    type: string
+  pageNumber:
+    in: query
+    name: page[number]
+    description: "Page number of results. Used to paginate through results."
+    required: false
+    type: string
 
 definitions:
-  ResultObjects:
+  CoursesResultObject:
     properties:
       links:
         $ref: "#/definitions/Links"
       data:
         type: array
         items:
-          $ref: "#/definitions/ResourceObject"
-
-  ResourceObject:
+          $ref: "#/definitions/CourseResourceObject"
+      meta:
+        $ref: '#/definitions/Meta'
+  CourseResourceObject:
     properties:
       id:
         type: string
       type:
         type: string
+        example: "courses"
       attributes:
-        $ref: "#/definitions/Attributes"
-
-  Attributes:
+        properties:
+          academicYear:
+            description: Code value to identify the academic year for the term.
+            type: string
+            example: "1819"
+          academicYearDescription:
+            description: Short summary of the academic year for the term.
+            type: string
+            example: "Academic Year 2018-19"
+          courseReferenceNumber:
+            description: Uniquely identifies a course section for a given term.
+            type: string
+            example: "123456"
+          courseSubject:
+            description: Abbreviated course subject.
+            type: string
+            example: "ECON"
+          courseSubjectDescription:
+            description: Description of course subject.
+            type: string
+            example: "Economics"
+          courseNumber:
+            type: string
+            example: "352"
+          courseTitle:
+            description: Title of the course.
+            type: string
+            example: "Environmental Economics & Policy"
+          sectionNumber:
+            description: The unique section of a specific course number.
+            type: string
+            example: "001"
+          term:
+            description: The term that this course is scheduled for.
+            type: string
+            example: "201901"
+          termDescription:
+            description: Description of the term.
+            type: string
+            example: "Fall 2018"
+          scheduleDescription:
+            description: Human readable schedule type for the course (agnostic of meeting times).
+            type: string
+            example: "Lecture"
+          scheduleType:
+            description: Type of schedule for the course (agnostic of meeting times).
+            type: string
+            example: "A"
+            enum: [B, C, D, E, F, G, H, I, J, K, A, L, M, N, O, P , Q, R, S, T, U, W, Y, Z, V, X, MID, FIL, HYB]
+          creditHours:
+            description: Credit hours of the course.
+            type: integer
+            example: 3
+          waitlistAvailable:
+            description: Available seats on waitlist for this section.
+            type: integer
+            example: 5
+          waitlistCapacity:
+            description: Total capacity of the waitlist for this section.
+            type: integer
+            example: 5
+          waitlistCount:
+            description: Current count of filled seats on the waitlist for this section.
+            type: integer
+            example: 0
+          faculty:
+            description: Faculty and instructors associated with this course.
+            type: array
+            items:
+              properties:
+                osuID:
+                  description: Person ID for the faculty.
+                  type: string
+                  example: "937654321"
+                  #todo: is this ID private/sensitive data?
+                name:
+                  description: Display name of the faculty.
+                  type: string
+                  example: "Johnson, Bob"
+                email:
+                  description: Email address of the faculty.
+                  type: string
+                  example: "bob.johnson@oregonstate.edu"
+                primary:
+                  description: Indicates whether the faculty is the primary faculty for the course.
+                  type: boolean
+                  example: true
+          meetingTimes:
+            description: Weekly meeting times for the course.
+            type: array
+            items:
+              properties:
+                beginDate:
+                  description: The starting date of the meeting time schedule.
+                  type: string
+                  format: date
+                  example: "2018-09-20"
+                beginTime:
+                  description: The starting time of the meeting time for the course in 24 hour format.
+                  type: string
+                  example: "14:00:00"
+                endDate:
+                  description: The ending date of the meeting time schedule.
+                  type: string
+                  format: date
+                  example: "2018-11-30"
+                endTime:
+                  description: The starting time of the meeting time for the course in 24 hour format.
+                  type: string
+                  example: "14:50:00"
+                room:
+                  description: Room where the meeting time meets.
+                  type: string
+                  example: "100"
+                building:
+                  description: The building abbreviation of the meeting time.
+                  type: string
+                  example: "LINC"
+                buildingDescription:
+                  description: The name of the building.
+                  type: string
+                  example: "Learning Innovation Center"
+                campus:
+                  description: Campus location of the meeting time.
+                  type: string
+                  example: "Oregon State - Corvallis"
+                hoursPerWeek:
+                  description: The amount of hours this meeting time meets per week.
+                  type: number
+                  format: float
+                  example: 1.66
+                creditHourSession:
+                  description: Session credit hours for this meeting time.
+                  type: integer
+                  example: 2
+                scheduleType:
+                  description: |
+                    Type of schedule for this given meeting type.
+                    B: Discussion
+                    C: Recitation
+                    D: Laboratory
+                    E: Seminar
+                    F: Independent or Special Studies
+                    G: Research
+                    H: Activity
+                    I: Experimental
+                    J: Internship
+                    K: Streaming Media
+                    A: Lecture
+                    L: Tutorial
+                    M: Practicum
+                    N: Reading and Conference
+                    O: Experiential/Co-op Education
+                    P: Programmed Instruction
+                    Q: Thesis
+                    R: Studio
+                    S: Project
+                    T: Telecourse/Distance Learning
+                    U: Externship
+                    W: Workshop
+                    Y: Online
+                    Z: Modular
+                    V: Examination for Credit
+                    X: One-time Event
+                    MID: Midterm Exam
+                    FNL: Final Exam
+                    HYB: Hybrid
+                  type: string
+                  example: "A"
+                  enum: [B, C, D, E, F, G, H, I, J, K, A, L, M, N, O, P , Q, R, S, T, U, W, Y, Z, V, X, MID, FIL, HYB]
+                weeklySchedule:
+                  description: |
+                    Array of day abbreviations to represent which days of the week this meeting time occurs on.
+                    If an abbreviation is present in the array, the meeting time meets on that day of the week.
+                    The meeting time does not meet on any days of the week which aren't in the array.
+                    Abbreviations and their corresponding day of the week:
+                    M: Monday
+                    T: Tuesday
+                    W: Wednesday
+                    Th: Thursday
+                    F: Friday
+                    Sa: Saturday
+                    Su: Sunday
+                  type: array
+                  example: ["M", "W", "F"]
+                  items:
+                    type: string
+                    enum:  [M, T, W, Th, F, Sa, Su]
+  SubjectsResultObject:
     properties:
-      campusDescription:
-        type: string
-        description: "Name of campus. Sample value: `Oregon State - Corvallis`"
-      courseNumber:
-        type: string
-        description: "Number of course. Sample value: `111` for MTH 111"
-      crn:
-        type: string
-        description: "Course Reference Number used to uniquely identify a class available for registration. This is the CRN value that students use to register for a class section."
-      courseTitle:
-        type: string
-        description: "Title of the course"
-      creditHourHigh:
-        type: integer
-        description: "Maximum number of credit hours for a course. Used in variable credit courses."
-      creditHourLow:
-        type: integer
-        description: "Minimum number of credit hours for a course."
-      creditHours:
-        type: integer
-        description: "Restrict a course to a single credit hour value."
-      enrollment:
-        type: integer
-        description: "Number of currently enrolled students."
-      maximumEnrollment:
-        type: integer
-        description: "Maximum number of people that can enroll"
-      faculty:
+      links:
+        $ref: "#/definitions/Links"
+      data:
         type: array
         items:
-          $ref: "#/definitions/Faculty"
-      meetingTimes:
+          $ref: "#/definitions/SubjectResourceObject"
+      meta:
+        $ref: '#/definitions/Meta'
+  SubjectResultObject:
+    properties:
+      links:
+        $ref: "#/definitions/Links"
+      data:
+        $ref: "#/definitions/SubjectResourceObject"
+      meta:
+        $ref: '#/definitions/Meta'
+  SubjectResourceObject:  
+    properties:
+      id:
+        type: string
+        description: "Globally unique indentifier for subject."
+        example: "994d9fc2-17b3-426f-903b-36276fe8fb2a"
+      type:
+        type: string
+        example: "subjects"
+      links:
+        $ref: "#/definitions/SelfLink"
+      attributes:
+        properties:
+          abbreviation:
+            type: string
+            description: "Abbreviated subject name."
+            example: "CS"
+          title:
+            type: string
+            description: "Human readable subject name."
+            example: "Computer Science"
+  TermsResultObject:
+    properties:
+      links:
+        $ref: "#/definitions/Links"
+      data:
         type: array
         items:
-          $ref: "#/definitions/MeetingTimes"
-      openSection:
-        type: string
-        description: "Whether or not the section is open for students to register"
-      termStartDate":
-        type: string
-        description: "Beginining of term. Format: YYYY-MM-DD"
-      termEndDate:
-        type: string
-        description: "End of term. Format: YYYY-MM-DD"
-      termWeeks":
-        type: string
-        description: "Number of weeks the class lasts."
-      scheduleTypeDescription:
-        type: string
-        description: "Whether the section is a lecture, recitation, thesis, or another type"
-      section:
-        type: string
-        description: "Section class"
-      status:
-        type: string
-        description: "Whether the course is open or closed"
-      subject:
-        type: string
-        description: "Letter identifier to specify the subject. This is the same value as the subject parameter"
-      subjectCourse:
-        type: string
-        description: "Subject and course number together. Sample value: CS161"
-      subjectDescription:
-        type: string
-        description: "Description of the subject"
-      term:
-        type: string
-        description: "Term for this specific CRN"
-      termDescription:
-        type: string
-        description: "Term description"
-      waitCapacity:
-        type: integer
-        description: "Maximum waiting list capacity"
-      waitCount:
-        type: integer
-        description: "Number of students currently in waiting list to register"
-
-  Faculty:
+          $ref: "#/definitions/TermResourceObject"
+      meta:
+        $ref: '#/definitions/Meta'
+  TermResultObject:
     properties:
-      displayName:
-        type: string
-      primaryFaculty:
-        type: boolean
-
-  MeetingTimes:
+      links:
+        $ref: "#/definitions/Links"
+      data:
+        $ref: "#/definitions/TermResourceObject"
+      meta:
+        $ref: '#/definitions/Meta'
+  TermResourceObject:
     properties:
-        startTime:
-          type: string
-          description: "Time when the class meets in 24hr format"
-        endTime:
-          type: string
-          description: "Time when the class ends in 24hr format"
-        building:
-          type: string
-          description: "Building abbreviation"
-        buildingName:
-          type: string
-          description: "Name of building"
-        room:
-          type: string
-          description: "Room number"
-        campus:
-          type: string
-          description: "Campus code"
-        campusDescription:
-          type: string
-          description: "Name of campus"
-        monday:
-          type: boolean
-          description: "Whether or not the class meets on this day."
-        tuesday:
-          type: boolean
-          description: "Whether or not the class meets on this day."
-        wednesday:
-          type: boolean
-          description: "Whether or not the class meets on this day."
-        thursday:
-          type: boolean
-          description: "Whether or not the class meets on this day."
-        friday:
-          type: boolean
-          description: "Whether or not the class meets on this day."
-        saturday:
-          type: boolean
-          description: "Whether or not the class meets on this day."
-        sunday:
-          type: boolean
-          description: "Whether or not the class meets on this day."
-
-
-
+      id:
+        type: string
+        description: "Term code."
+        example: "201901"
+      type:
+        type: string
+        example: "terms"
+      links:
+        $ref: "#/definitions/SelfLink"
+      attributes:
+        properties:
+          code:
+            type: string
+            description: |
+              Six digit code to identify the fiscal year and term.
+              For example, Fall 2016 is identified as: 201701 and Summer 2016 as: 201700.
+              This code is used to search for classes in a given term.
+            example: "201901"
+          description:
+            type: string
+            description: "Human readable academic term description."
+            example: "Fall 2018"
+          startDate:
+            type: string
+            format: date
+            description: "First day of classes in this term."
+            example: "2018-09-20"
+          endDate:
+            type: string
+            format: date
+            description: "Last day of classes in this term."
+            example: "2018-12-07"
+          financialAidYear:
+            type: string
+            description: "Aid year associated with this term. This is a four digit code. For example, for Summer 2016, the value would be: 1617"
+            example: "1819"
+          housingStartDate:
+            type: string
+            format: date
+            description: "First day for meal plan and housing assignments."
+            example: "2018-09-23"
+          housingEndDate:
+            type: string
+            format: date
+            description: "Last day for meal plan and housing assignments."
+            example: "2018-12-08"
   Links:
     properties:
       self:
         type: string
+        format: url
       first:
         type: string
+        format: url
       last:
         type: string
+        format: url
       prev:
         type: string
+        format: url
       next:
         type: string
-        description: Name of the API.
-      time:
-        type: string
-        description: Build time in ISO 8601 format.
-      unixTime:
-        type: integer
-        description: Build time as milliseconds since the unix epoch.
-      commit:
-        type: string
-        description: Git commit hash of the revision which was built.
-      documentation:
-        type: string
-        description: Filename of the swagger specification for the API.
-  Error:
-    type: object
+        format: url
+  SelfLink:
     properties:
-      status:
+      self:
+        type: string
+        format: url
+  Meta:
+    properties:
+      totalResults:
         type: integer
-        format: int32
-        description: HTTP status code.
-      developerMessage:
-        type: string
-        description: An error string aimed at developers.
-      userMesage:
-        type: string
-        description: An error string aimed at end users.
-      code:
+        description: Total number of results
+        example: 10
+      totalPages:
         type: integer
-        description: Error code.
-      details:
-        type: string
-        description: A link to further information about the error.
+        description: Total number of pages
+        example: 10
+      currentPageNumber:
+        type: integer
+        description: Page number of the returned results
+        example: 1
+      currentPageSize:
+        type: integer
+        description: Number of results per page
+        example: 25
+  Error:
+    properties:
+      errors:
+        type: array
+        items:
+          properties:
+            status:
+              type: string
+              description: HTTP status code.
+            links:
+              properties:
+                about:
+                  type: string
+                  format: url
+                  description: Link to further information about the error.
+            code:
+              type: string
+              description: Application specific error code.
+            title:
+              type: string
+              description: Short summary of the error.
+            detail:
+              type: string
+              description: A human-readable explanation specific to this occurrence of the problem.

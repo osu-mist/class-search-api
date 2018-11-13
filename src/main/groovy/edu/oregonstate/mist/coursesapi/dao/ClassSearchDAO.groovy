@@ -1,204 +1,273 @@
 package edu.oregonstate.mist.coursesapi.dao
 
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import edu.oregonstate.mist.api.jsonapi.ResourceObject
-import edu.oregonstate.mist.coursesapi.core.Attributes
-import edu.oregonstate.mist.coursesapi.core.Faculty
-import edu.oregonstate.mist.coursesapi.core.MeetingTime
-import org.apache.http.HttpEntity
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import edu.oregonstate.mist.api.jsonapi.MetaObject
+import edu.oregonstate.mist.coursesapi.core.Subject
+import edu.oregonstate.mist.coursesapi.core.Subjects
+import edu.oregonstate.mist.coursesapi.core.Term
+import edu.oregonstate.mist.coursesapi.core.Terms
+import groovy.transform.InheritConstructors
+import org.apache.http.Header
+import org.apache.http.HttpHeaders
+import org.apache.http.HttpResponse
+import org.apache.http.HttpStatus
 import org.apache.http.client.HttpClient
-import org.apache.http.client.methods.CloseableHttpResponse
+import org.apache.http.client.methods.HttpGet
 import org.apache.http.util.EntityUtils
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
+import javax.ws.rs.core.UriBuilder
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 class ClassSearchDAO {
-    private static final String STATUS_CLOSED = 'Closed'
-    private static final String STATUS_OPEN = 'Open'
-    private static final String STATUS_WAITLISTED = 'Waitlisted'
-
-    private UtilHttp utilHttp
     private HttpClient httpClient
-    private ObjectMapper mapper = new ObjectMapper()
+    private final URI baseURI
 
-    ClassSearchDAO(UtilHttp utilHttp, HttpClient httpClient) {
+    private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
+
+    private static Logger logger = LoggerFactory.getLogger(this)
+
+    private static final String termsEndpoint = "terms"
+    private static final String subjectsEndpoint = "subjects"
+
+    ClassSearchDAO(HttpClient httpClient, String endpoint) {
         this.httpClient = httpClient
-        this.utilHttp = utilHttp
+        this.baseURI = UriBuilder.fromUri(endpoint).path("/api").build()
     }
 
-    /**
-     * Performs class search and returns results in jsonapi format
-     *
-     * @param term
-     * @param subject
-     * @param courseNumber
-     * @param q
-     * @param pageNumber
-     * @param pageSize
-     * @return
-     */
-    public def getData(String term, String subject, String courseNumber, String q,
-                       Integer pageNumber, Integer pageSize) {
-        CloseableHttpResponse response
-        def data = []
-        def sourcePagination = [totalCount: 0, pageOffset: 0, pageMaxSize: 0]
-
-        try {
-            def query = getQueryMap(term, subject, courseNumber, q, pageNumber, pageSize)
-            response = utilHttp.sendGet(query, httpClient)
-
-            HttpEntity entity = response.getEntity()
-            def entityString = EntityUtils.toString(entity)
-
-            data = this.mapper.readValue(entityString,
-                    new TypeReference<List<HashMap>>() {
-                })
-
-            sourcePagination = getSourcePagination(response.getAllHeaders())
-            EntityUtils.consume(entity)
-        } finally {
-            response?.close()
-        }
-
-        [data: getFormattedData(data), sourcePagination: sourcePagination]
+    public Terms getTerms(Integer pageSize, Integer pageNumber) {
+        BackendResponse termsResponse = getResponse(termsEndpoint, pageSize, pageNumber)
+        List<BackendTerm> terms = objectMapper.readValue(
+                termsResponse.response, new TypeReference<List<BackendTerm>>() {})
+        new Terms(
+                terms: terms.collect { Term.fromBackendTerm(it) },
+                metaObject: getMetaObject(termsResponse.total, pageSize, pageNumber)
+        )
     }
 
-    private static getSourcePagination(headers) {
-        def headerMap = [:]
-        headers.each {
-            headerMap[it.name] = it.value
-        }
-
-        [
-            totalCount: headerMap['X-hedtech-totalCount']?.toInteger(),
-            pageOffset: headerMap['X-hedtech-pageOffset']?.toInteger(),
-            pageMaxSize: headerMap['X-hedtech-pageMaxSize']?.toInteger()
-        ]
+    public Term getTermByTermCode(String termCode) {
+        BackendResponse termResponse = getResponse("$termsEndpoint/$termCode", null, null)
+        BackendTerm term = objectMapper.readValue(termResponse.response, BackendTerm.class)
+        Term.fromBackendTerm(term)
     }
 
-    /**
-     * Takes the data from the backend and formats it based on the swagger spec.
-     *
-     * @param data
-     * @return
-     */
-    private static List<ResourceObject> getFormattedData(def data) {
-        List<ResourceObject> result = new ArrayList<ResourceObject>()
-
-        data.each {
-            List<Faculty> faculty = new ArrayList<Faculty>()
-            List<MeetingTime> meetingTimes = new ArrayList<MeetingTime>()
-            String status = getStatus(it)
-
-            it.faculty.each { f ->
-                faculty << new Faculty(
-                        displayName: f.displayName,
-                        primaryFaculty: f.primaryIndicator
-                )
-            }
-            it.meetingTimes.each { k ->
-                meetingTimes << new MeetingTime(
-                        startTime:          k.beginTime,
-                        endTime:            k.endTime,
-                        building:           k.building,
-                        buildingName:       k.buildingDescription,
-                        room:               k.room,
-                        campus:             k.campus,
-                        campusDescription:  k.campusDescription,
-                        monday:             k.monday,
-                        tuesday:            k.tuesday,
-                        wednesday:          k.wednesday,
-                        thursday:           k.thursday,
-                        friday:             k.friday,
-                        saturday:           k.saturday,
-                        sunday:             k.sunday
-                )
-            }
-
-            Attributes attributes = new Attributes(
-                    campusDescription:          it.campusDescription,
-                    courseNumber:               it.courseNumber,
-                    crn:                        it.courseReferenceNumber,
-                    courseTitle:                it.courseTitle,
-                    creditHourHigh:             it.creditHourHigh,
-                    creditHourLow:              it.creditHourLow,
-                    creditHours:                it.creditHours,
-                    enrollment:                 it.enrollment,
-                    maximumEnrollment:          it.maximumEnrollment,
-                    openSection:                it.openSection,
-                    termStartDate:              it.partOfTermStartDate,
-                    termEndDate:                it.partOfTermEndDate,
-                    termWeeks:                  it.partOfTermWeeks,
-                    scheduleTypeDescription:    it.scheduleTypeDescription,
-                    section:                    it.sequenceNumber,
-                    status:                     status,
-                    subject:                    it.subject,
-                    subjectCourse:              it.subjectCourse,
-                    subjectDescription:         it.subjectDescription,
-                    term:                       it.term,
-                    termDescription:            it.termDesc,
-                    waitCapacity:               it.waitCapacity,
-                    waitCount:                  it.waitCount,
-                    faculty:                    faculty,
-                    meetingTimes:               meetingTimes
-            )
-
-            result << new ResourceObject(id: it.courseReferenceNumber, type: 'course',
-                    attributes: attributes)
-        }
-
-        result
+    public Subjects getSubjects(Integer pageSize, Integer pageNumber) {
+        BackendResponse subjectsResponse = getResponse(subjectsEndpoint, pageSize, pageNumber)
+        List<BackendSubject> subjects = objectMapper.readValue(
+                subjectsResponse.response, new TypeReference<List<BackendSubject>>() {})
+        new Subjects(
+                subjects: subjects.collect { Subject.fromBackendSubject(it) },
+                metaObject: getMetaObject(subjectsResponse.total, pageSize, pageNumber)
+        )
     }
 
-    /**
-     * Calculates the status of a section based on availability and wait count.
-     *
-     * @param it
-     * @return
-     */
-    private static String getStatus(it) {
-        String status = STATUS_CLOSED
-        if (it.status.sectionOpen == STATUS_OPEN) {
-            status = STATUS_OPEN
-        }
-        if (it.waitCount > 0) {
-            status = STATUS_WAITLISTED //@todo: verify logic
-        }
-        status
+    public Subject getSubjectById(String subjectId) {
+        BackendResponse subjectResponse = getResponse("$subjectsEndpoint/$subjectId", null, null)
+        BackendSubject subject = objectMapper.readValue(
+                subjectResponse.response, BackendSubject.class)
+        Subject.fromBackendSubject(subject)
     }
 
-    /**
-     * Parses out the parameters and adds them to a map if they are not empty
-     *
-     * @param term
-     * @param subject
-     * @param courseNumber
-     * @param q
-     * @param pageNumber
-     * @param pageSize
-     * @return
-     */
-    private LinkedHashMap getQueryMap(String term, String subject, String courseNumber, String q,
-                                      Integer pageNumber, Integer pageSize) {
-        def query = [offset:0]
+    public String status() {
+        BackendResponse healthCheckResponse = getResponse("healthcheck", null, null)
+
+        def unmappedErrors = objectMapper.readValue(healthCheckResponse.response,
+                new TypeReference<List<HashMap>>() {})
+
+        unmappedErrors[0]['status']
+    }
+
+    private static MetaObject getMetaObject(Integer total, Integer pageSize, Integer pageNumber) {
+        new MetaObject(
+                totalResults: total,
+                totalPages: Math.ceil(total / pageSize),
+                currentPageNumber: pageNumber,
+                currentPageSize: pageSize
+        )
+    }
+
+    private BackendResponse getResponse(String endpoint,
+                                        Integer pageSize,
+                                        Integer pageNumber,
+                                        String term = null) {
+        UriBuilder uriBuilder = UriBuilder.fromUri(baseURI)
+        uriBuilder.path(endpoint)
 
         if (term) {
-            query['term'] = term.trim()
+            uriBuilder.queryParam("term", term)
         }
-        if (subject) {
-            query['subject'] = subject.trim()
+
+        if (pageNumber && pageSize) {
+            // max == maximum results in a response
+            uriBuilder.queryParam("max", pageSize)
+            // the first result should be offset objects from the first object
+            uriBuilder.queryParam("offset", (pageNumber - 1) * pageSize)
         }
-        if (courseNumber) {
-            query['courseNumber'] = courseNumber.trim()
+
+        URI requestURI = uriBuilder.build()
+
+        HttpGet request = new HttpGet(requestURI)
+        request.setHeader(HttpHeaders.ACCEPT, "application/json")
+
+        logger.info("Making a request to ${requestURI}")
+
+        HttpResponse response = httpClient.execute(request)
+
+        Integer statusCode = response.getStatusLine().getStatusCode()
+
+        if (statusCode == HttpStatus.SC_OK) {
+            logger.info("Successful response from backend data source.")
+            Header totalHeader = response.getFirstHeader("X-Total-Count")
+            new BackendResponse(
+                    response: EntityUtils.toString(response.entity),
+                    total: totalHeader ? Integer.parseInt(
+                            response.getFirstHeader("X-Total-Count").value) : null
+            )
+        } else if (statusCode == HttpStatus.SC_NOT_FOUND) {
+            throw new ClassSearchDAONotFoundException()
+        } else if (statusCode == HttpStatus.SC_BAD_REQUEST) {
+            List<String> errorMessages = getBackendErrorMessages(
+                    EntityUtils.toString(response.entity))
+
+            logger.info("400 response from backend data source. Error messages: $errorMessages")
+
+            if (errorMessages.contains("Term not found")) {
+                String message = "Term: $term is invalid."
+                logger.info(message)
+
+                throw new InvalidTermException(message)
+            } else {
+                String message = "Uncaught error(s) in bad request."
+                logger.error(message)
+
+                throw new Exception(message)
+            }
+        } else {
+            String message = "Unexpected response from backend data source. " +
+                    "Status code: $statusCode"
+            logger.error(message)
+
+            throw new Exception(message)
         }
-        if (q) {
-            query['keyword'] = q.trim()
-        }
-        if (pageNumber && pageNumber > 1) {
-            query['offset'] = pageSize * (pageNumber - 1)
-        }
-        if (pageSize) {
-            query['max'] = pageSize
-        }
-        query
     }
+
+    private List<String> getBackendErrorMessages(String errorResponse) {
+        def unmappedErrors = objectMapper.readValue(errorResponse, new TypeReference<HashMap>() {})
+
+        List<BackendError> errors = objectMapper.convertValue(unmappedErrors["errors"],
+                new TypeReference<List<BackendError>>() {})
+
+        errors.collect { it.message }
+    }
+}
+
+class BackendResponse {
+    String response // plain text response, meant to be deserialized.
+    Integer total // total objects in resource, regardless of the amount in the current response
+}
+
+@InheritConstructors
+class InvalidTermException extends Exception {}
+
+@InheritConstructors
+class ClassSearchDAONotFoundException extends Exception {}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+class BackendError {
+    String code
+    String message
+    String description
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+class BackendTerm {
+    String code
+    String description
+    LocalDate startDate
+    LocalDate endDate
+    String financialAidProcessingYear
+    LocalDate housingStartDate
+    LocalDate housingEndDate
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+class BackendSubject {
+    String id
+    String abbreviation
+    String title
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+class BackendClassSchedule {
+    String academicYear
+    String academicYearDescription
+    String courseReferenceNumber
+    String subject
+    String subjectDescription
+    String courseNumber
+    String courseTitle
+    String sequenceNumber
+    String term
+    String termDescription
+    String scheduleDescription
+    String scheduleType
+    Integer creditHour
+    String gradingModeDescription
+    List<BackendFaculty> faculty
+    List<BackendMeetingTime> meetingTimes
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+class BackendFaculty {
+    String bannerId
+    String displayName
+    String emailAddress
+    Boolean primaryIndicator
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+class BackendMeetingTime {
+    LocalDate startDate
+    LocalDate endDate
+
+    private static DateTimeFormatter backendTimeFormat = DateTimeFormatter.ofPattern("HHmm")
+
+    @JsonIgnore
+    LocalTime beginTime
+
+    @JsonProperty("beginTime")
+    private void setBeginTime(String beginTime) {
+        this.beginTime = LocalTime.parse(beginTime, backendTimeFormat)
+    }
+
+    @JsonIgnore
+    LocalTime endTime
+
+    @JsonProperty("endTime")
+    private void setEndTime(String endTime) {
+        this.endTime = LocalTime.parse(endTime, backendTimeFormat)
+    }
+
+    String room
+    String building
+    String buildingDescription
+    String campusDescription
+    BigDecimal hoursWeek
+    Integer creditHourSession
+    String meetingScheduleType
+    Boolean sunday
+    Boolean monday
+    Boolean tuesday
+    Boolean wednesday
+    Boolean thursday
+    Boolean friday
+    Boolean saturday
 }
