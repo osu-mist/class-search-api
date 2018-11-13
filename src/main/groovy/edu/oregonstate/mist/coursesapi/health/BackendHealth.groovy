@@ -1,6 +1,7 @@
 package edu.oregonstate.mist.coursesapi.health
 
 import com.codahale.metrics.health.HealthCheck
+import com.codahale.metrics.health.HealthCheck.Result
 import edu.oregonstate.mist.coursesapi.dao.ClassSearchDAO
 
 class BackendHealth extends HealthCheck {
@@ -10,7 +11,8 @@ class BackendHealth extends HealthCheck {
         this.classSearchDAO = classSearchDAO
     }
 
-    protected Result check() {
+    @Override
+    protected Result check() throws Exception {
         try {
             String status = classSearchDAO.status()
             status == "available" ? Result.healthy() : Result.unhealthy("DAO status: $status")
